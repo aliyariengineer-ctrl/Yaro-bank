@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>سامانه اقتصاد مجازی یارو</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
+        .box { background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input { padding: 10px; font-size: 16px; width: 200px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>ورود به سامانه یارو</h1>
+        <p>لطفاً کد ۵ رقمی خود را وارد کنید:</p>
+        <input type="number" id="loginCode" placeholder="کد ۵ رقمی">
+        <br><br>
+        <button onclick="login()">ورود</button>
+    </div>
+
+    <script>
+        function login() {
+            const code = document.getElementById('loginCode').value;
+            alert("فعلاً در حال ساخت هستیم! کد شما: " + code);
+        }
+    </script>
+</body>
+</html>
