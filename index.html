@@ -1,29 +1,301 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>سامانه اقتصاد مجازی یارو</title>
-    <style>
-        body { font-family: Tahoma, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
-        .box { background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input { padding: 10px; font-size: 16px; width: 200px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #28a745; color: white; border: none; border-radius: 5px; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>یارو بانک</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111b2e;
+      --text: #e8eefc;
+      --muted: #a9b7d6;
+      --accent: #4f8cff;
+      --danger: #ff5c7a;
+      --ok: #28d17c;
+      --border: #22304f;
+    }
+    body {
+      margin: 0;
+      background: linear-gradient(120deg, #0b1220, #0a1630);
+      font-family: Tahoma, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .wrap {
+      max-width: 600px;
+      width: 100%;
+      margin: auto;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: rgba(17, 27, 46, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .brand {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+    .sub {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      background: #0b1426;
+      color: var(--text);
+      outline: none;
+      letter-spacing: 4px;
+      font-size: 20px;
+      text-align: center;
+    }
+    input:focus {
+      border-color: var(--accent);
+    }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    button {
+      flex: 1;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      transition: 0.15s;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #243357;
+      flex: 0.5;
+    }
+    .btn-danger {
+      background: var(--danger);
+      margin-top: 20px;
+      width: 100%;
+    }
+    .msg {
+      margin-top: 14px;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: center;
+    }
+    .msg.ok {
+      background: rgba(40, 209, 124, 0.1);
+      color: var(--ok);
+      border: 1px solid var(--ok);
+    }
+    .msg.err {
+      background: rgba(255, 92, 122, 0.1);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+    .stat-box {
+      border: 1px solid var(--border);
+      background: #0b1426;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      text-align: center;
+    }
+    .big-balance {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--ok);
+      margin: 8px 0;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
+
 <body>
-    <div class="box">
-        <h1>ورود به سامانه یارو</h1>
-        <p>لطفاً کد ۵ رقمی خود را وارد کنید:</p>
-        <input type="number" id="loginCode" placeholder="کد ۵ رقمی">
-        <br><br>
-        <button onclick="login()">ورود</button>
+  <div class="wrap">
+    
+    <!-- کارت ورود -->
+    <div class="card" id="loginCard">
+      <div class="brand">سامانه اقتصاد کلاسی «یارو»</div>
+      <div class="sub">لطفاً کد ۵ رقمی خود را وارد کنید</div>
+
+      <label for="codeInput">کد ۵ رقمی ورود</label>
+      <input id="codeInput" inputmode="numeric" maxlength="5" placeholder="• • • • •" autocomplete="off" />
+
+      <div class="btn-row">
+        <button id="loginBtn" type="button">ورود به حساب</button>
+        <button class="btn-secondary" id="clearBtn" type="button">پاک کردن</button>
+      </div>
+
+      <div class="msg hidden" id="loginMsg"></div>
     </div>
 
-    <script>
-        function login() {
-            const code = document.getElementById('loginCode').value;
-            alert("فعلاً در حال ساخت هستیم! کد شما: " + code);
+    <!-- داشبورد کاربر پس از ورود -->
+    <div class="card hidden" id="dashCard">
+      <div class="brand" id="welcomeText">خوش آمدید</div>
+      <div class="sub" id="roleText">نقش: دانش‌آموز</div>
+
+      <div class="stat-box">
+        <div style="font-size: 13px; color: var(--muted);">موجودی کیف پول شما</div>
+        <div class="big-balance"><span id="balanceText">0</span> یارو</div>
+      </div>
+
+      <button class="btn-danger" id="logoutBtn" type="button">خروج از حساب</button>
+    </div>
+
+  </div>
+
+  <script>
+    // تنظیمات Supabase
+    const SUPABASE_URL = "https://ftdcgqcacweiqdttkhdq.supabase.co";
+    const SUPABASE_KEY = "GAPGPTMASKTOKENmqxrbhvbviX0X";
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // المان‌های صفحه
+    const loginCard = document.getElementById("loginCard");
+    const dashCard = document.getElementById("dashCard");
+    const codeInput = document.getElementById("codeInput");
+    const loginBtn = document.getElementById("loginBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const loginMsg = document.getElementById("loginMsg");
+    const welcomeText = document.getElementById("welcomeText");
+    const roleText = document.getElementById("roleText");
+    const balanceText = document.getElementById("balanceText");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    function showMsg(text, type) {
+      loginMsg.textContent = text;
+      loginMsg.className = "msg " + type;
+    }
+
+    function hideMsg() {
+      loginMsg.className = "msg hidden";
+      loginMsg.textContent = "";
+    }
+
+    function setLoading(isLoading) {
+      loginBtn.disabled = isLoading;
+      clearBtn.disabled = isLoading;
+      codeInput.disabled = isLoading;
+      loginBtn.textContent = isLoading ? "در حال بررسی..." : "ورود به حساب";
+    }
+
+    function showDashboard(user) {
+      loginCard.classList.add("hidden");
+      dashCard.classList.remove("hidden");
+      welcomeText.textContent = `${user.name} ${user.family} عزیز، خوش آمدید`;
+      roleText.textContent = `سمت / نقش: ${user.role || "دانش‌آموز"}`;
+      balanceText.textContent = user.balance ?? 0;
+    }
+
+    function showLogin() {
+      dashCard.classList.add("hidden");
+      loginCard.classList.remove("hidden");
+      codeInput.value = "";
+      hideMsg();
+      codeInput.focus();
+    }
+
+    async function login() {
+      hideMsg();
+      const code = (codeInput.value || "").trim();
+
+      if (code.length !== 5 || isNaN(code)) {
+        showMsg("کد ورود باید دقیقاً یک عدد ۵ رقمی باشد.", "err");
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const { data, error } = await client.rpc("verify_login", { entered_code: code });
+
+        if (error) {
+          console.error("Supabase Error:", error);
+          showMsg("خطا در برقراری ارتباط با دیتابیس یا تابع ورود.", "err");
+          return;
         }
-    </script>
+
+        if (!data || data.length === 0) {
+          showMsg("کد وارد شده اشتباه است یا کاربری با این کد وجود ندارد.", "err");
+          return;
+        }
+
+        const user = data[0];
+        localStorage.setItem("yaro_session", JSON.stringify(user));
+        showDashboard(user);
+
+      } catch (err) {
+        console.error(err);
+        showMsg("خطای غیرمنتظره در برنامه رخ داد.", "err");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loginBtn.addEventListener("click", login);
+
+    clearBtn.addEventListener("click", () => {
+      codeInput.value = "";
+      hideMsg();
+      codeInput.focus();
+    });
+
+    codeInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") login();
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("yaro_session");
+      showLogin();
+    });
+
+    // بازیابی نشست در صورت رفرش
+    (function checkSession() {
+      try {
+        const saved = localStorage.getItem("yaro_session");
+        if (saved) {
+          const user = JSON.parse(saved);
+          showDashboard(user);
+          return;
+        }
+      } catch (e) {}
+      showLogin();
+    })();
+  </script>
 </body>
 </html>
+
