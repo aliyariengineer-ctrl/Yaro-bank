@@ -155,7 +155,6 @@
       display: none !important;
     }
 
-    /* استایل نشانگرها (Badge) */
     .badge {
       background: var(--badge-orange);
       color: #fff;
@@ -236,13 +235,11 @@
         <div class="big-balance"><span id="balanceText">0</span> یارو</div>
       </div>
 
-      <!-- دکمه ورود به لیست دانش‌آموزان همراه نشانگر -->
       <button class="btn-action" id="openStudentsBtn" type="button">
         <span>👥 فهرست دانش‌آموزان</span>
         <span class="badge hidden" id="totalMsgBadge">0</span>
       </button>
 
-      <!-- دکمه ورود به پیام‌های دولتی و اعلانات -->
       <button class="btn-action" id="openGovBtn" type="button">
         <span>🏛 پیام‌های دولتی و اخطارها</span>
         <span class="badge hidden" id="govMsgBadge">0</span>
@@ -259,12 +256,11 @@
       <button class="btn-secondary" id="backFromStudentsBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
 
-    <!-- پنل گزینه‌های دانش‌آموز انتخاب‌شده (۳ دکمه) -->
+    <!-- پنل ۳ دکمه دانش‌آموز -->
     <div class="card hidden" id="studentActionCard">
       <div class="brand" id="targetStudentName">نام دانش‌آموز</div>
       <div class="sub">انتخاب عملیات</div>
 
-      <!-- ۳ بخش مورد نظر شما -->
       <button class="btn-action" id="openTransferBtn">💳 واریز یارو</button>
       <button class="btn-action" id="openComplaintBtn">⚖️ ثبت شکایت</button>
       <button class="btn-action" id="openChatBtn">
@@ -275,7 +271,7 @@
       <button class="btn-secondary" id="backFromActionBtn" style="width: 100%; margin-top: 14px;">بازگشت به لیست</button>
     </div>
 
-    <!-- صفحه گفت‌وگو و ارسال پیام -->
+    <!-- صفحه چت -->
     <div class="card hidden" id="chatCard">
       <div class="brand" id="chatTargetName">گفت‌وگو</div>
       <div class="box-container" id="chatMessages" style="min-height: 180px;"></div>
@@ -299,18 +295,16 @@
   </div>
 
   <script>
-    // تنظیمات Supabase
+    // تنظیمات مستقیم و بدون تغییر
     const SUPABASE_URL = "https://ftdcgqcacweiqdttkhdq.supabase.co";
-    const SUPABASE_KEY = "GAPGPTMASKTOKENljox7d3paokX0X";
+    const SUPABASE_KEY = "GAPGPTMASKTOKENvc2q9tvcudeX1X";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // متغیرهای وضعیت
     let currentUser = null;
     let selectedStudent = null;
-    let unreadCountMap = {}; // تعداد پیام ناخوانده هر شخص
+    let unreadCountMap = {};
 
-    // المان‌های DOM
     const loginCard = document.getElementById("loginCard");
     const dashCard = document.getElementById("dashCard");
     const studentsCard = document.getElementById("studentsCard");
@@ -371,7 +365,6 @@
       roleText.textContent = `سمت / نقش: ${user.role || "دانش‌آموز"}`;
       balanceText.textContent = user.balance ?? 0;
 
-      // بروزرسانی تعداد پیام‌ها و نشانگرها
       fetchUnreadCounts();
     }
 
@@ -388,11 +381,9 @@
       codeInput.focus();
     }
 
-    // دریافت وضعیت پیام‌های خوانده‌نشده
     async function fetchUnreadCounts() {
       if (!currentUser) return;
 
-      // ۱. پیام‌های شخصی خوانده‌نشده
       const { data: messages } = await client
         .from("messages")
         .select("sender_id")
@@ -409,7 +400,6 @@
         });
       }
 
-      // تنظیم نشانگر روی دکمه لیست دانش‌آموزان
       if (totalUnread > 0) {
         totalMsgBadge.textContent = totalUnread;
         totalMsgBadge.classList.remove("hidden");
@@ -417,7 +407,6 @@
         totalMsgBadge.classList.add("hidden");
       }
 
-      // ۲. پیام‌های دولتی خوانده‌نشده
       const { data: govMsgs } = await client
         .from("system_notifications")
         .select("id")
@@ -432,7 +421,6 @@
       }
     }
 
-    // باز کردن لیست هم‌کلاسی‌ها
     openStudentsBtn.addEventListener("click", async () => {
       dashCard.classList.add("hidden");
       studentsCard.classList.remove("hidden");
@@ -467,7 +455,6 @@
       showDashboard(currentUser);
     });
 
-    // باز کردن پنل عملیات برای یک دانش‌آموز خاص
     function openStudentAction(student) {
       selectedStudent = student;
       studentsCard.classList.add("hidden");
@@ -488,7 +475,6 @@
       openStudentsBtn.click();
     });
 
-    // باز کردن بخش چت
     openChatBtn.addEventListener("click", async () => {
       studentActionCard.classList.add("hidden");
       chatCard.classList.remove("hidden");
@@ -499,22 +485,18 @@
     async function loadMessages() {
       chatMessages.innerHTML = "در حال بارگذاری پیام‌ها...";
 
-      // علامت‌گذاری به عنوان خوانده‌شده
       await client
         .from("messages")
         .update({ is_read: true })
         .eq("sender_id", selectedStudent.id)
         .eq("receiver_id", currentUser.id);
 
-      // دریافت پیام‌های طرفین
       const { data: msgs } = await client
         .from("messages")
         .select("*")
-        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.id})`)
-        .order("created_at", { ascending: true });
-
-      chatMessages.innerHTML = "";
-      if (!msgs || msgs.length === 0) {
+        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.muted); text-align:center;'>هنوز پیامی وجود ندارد.</div>";
+        return;
+      } msgs.length === 0) {
         chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center;'>هنوز پیامی وجود ندارد.</div>";
         return;
       }
@@ -528,7 +510,6 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // ارسال پیام جدید
     sendChatBtn.addEventListener("click", async () => {
       const text = chatInput.value.trim();
       if (!text) return;
@@ -550,13 +531,11 @@
       });
     });
 
-    // صفحه پیام‌های دولتی
     openGovBtn.addEventListener("click", async () => {
       dashCard.classList.add("hidden");
       govCard.classList.remove("hidden");
       govMessagesList.innerHTML = "در حال بارگذاری...";
 
-      // ثبت خوانده‌شدن
       await client
         .from("system_notifications")
         .update({ is_read: true })
@@ -588,7 +567,6 @@
       showDashboard(currentUser);
     });
 
-    // ورود به سامانه
     async function login() {
       hideMsg();
       const code = (codeInput.value || "").trim();
@@ -647,7 +625,6 @@
       showLogin();
     });
 
-    // بررسی نشست ذخیره‌شده
     (function checkSession() {
       try {
         const saved = localStorage.getItem("yaro_session");
