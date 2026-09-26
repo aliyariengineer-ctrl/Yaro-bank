@@ -1017,6 +1017,189 @@
       showLogin();
     });
 
+    // چک کردن نشان‌گر قرمز تراکنش‌های جدید دفتر کل
+    async function fetchLedgerBadge() {
+      if (!currentUser || currentUser.role !== "admin") return;
+      try {
+        const { data: count, error } = await client.rpc("admin_get_unread_ledger_count", {
+          p_admin_id: currentUser.id
+        });
+        if (error) return;
+
+        if (count && count > 0) {
+          ledgerBadge.textContent = count > 99 ? "+99" : count;
+          ledgerBadge.classList.remove("hidden");
+        } else {
+          ledgerBadge.classList.add("hidden");
+        }
+      } catch (err) {
+        console.error("خطا در بج دفتر کل:", err);
+      }
+    }
+
+    // باز کردن دفتر کل
+    openLedgerBtn.addEventListener("click", async () => {
+      hideAllCards();
+      ledgerCard.classList.remove("hidden");
+      ledgerBadge.classList.add("hidden");
+
+      await client.rpc("admin_mark_ledger_as_seen", { p_admin_id: currentUser.id });
+      loadLedgerTransactions();
+    });
+
+    async function loadLedgerTransactions() {
+      ledgerList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال دریافت دفتر کل...</div>";
+      try {
+        const { data, error } = await client.rpc("admin_get_all_transfers", {
+          p_admin_id: currentUser.id
+        });
+
+        if (error) {
+          ledgerList.innerHTML = `<div class="msg err">خطا در بارگذاری: ${error.message}</div>`;
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          ledgerList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:20px;'>هنوز هیچ تراکنشی ثبت نشده است.</div>";
+          return;
+        }
+
+        ledgerList.innerHTML = "";
+        data.forEach(item => {
+          const date = new Date(item.created_at).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
+          const row = document.createElement("div");
+          row.className = "list-item";
+          row.style.cursor = "default";
+          row.innerHTML = `
+            <div style="flex:1;">
+              <div><b>از:</b> ${item.sender_name} ⬅️ <b>به:</b> ${item.receiver_name}</div>
+              <div style="font-size:12px; color:var(--muted); margin-top:4px;">بابت: ${item.reason}</div>
+            </div>
+            <div style="text-align:left;">
+              <div style="color:var(--ok); font-weight:bold; font-size:15px;">${item.amount} یارو</div>
+              <div style="font-size:11px; color:var(--muted);">${date}</div>
+            </div>
+          `;
+          ledgerList.appendChild(row);
+        });
+      } catch (err) {
+        ledgerList.innerHTML = `<div class="msg err">خطا: ${err.message}</div>`;
+      }
+    }
+
+    document.getElementById("backFromLedgerBtn").addEventListener("click", () => {
+      showDashboard(currentUser);
+    });
+
+    // باز کردن پنل مشاهده موجودی کل افراد و تغییر دستی
+    openManageBalancesBtn.addEventListener("click", () => {
+      hideAllCards();
+      manageBalancesCard.classList.remove("hidden");
+      adjustSelectedUserId.value = "";
+      adjustSelectedUserName.textContent = "هیچ کاربری انتخاب نشده";
+      adjustDeltaInput.value = "";
+      adjustReasonInput.value = "";
+      adjustMsg.className = "msg hidden";
+      loadAllUsersBalances();
+    });
+
+    async function loadAllUsersBalances() {
+      allUsersBalanceList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال دریافت موجودی همه کاربران...</div>";
+      try {
+        const { data, error } = await client.rpc("admin_list_users_balances", {
+          p_admin_id: currentUser.id
+        });
+
+        if (error) {
+          allUsersBalanceList.innerHTML = `<div class="msg err">خطا: ${error.message}</div>`;
+          return;
+        }
+
+        allUsersBalanceList.innerHTML = "";
+        data.forEach(u => {
+          const row = document.createElement("div");
+          row.className = "list-item";
+          row.innerHTML = `
+            <div>
+              <b style="font-size:14px;">${u.name} ${u.family}</b>
+              <div style="font-size:11px; color:var(--muted);">نقش: ${u.role || "دانش‌آموز"} | کد: ${u.login_code || "-"}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:bold; color:var(--ok); font-size:14px;">${u.balance} یارو</span>
+              <button type="button" style="padding:6px 10px; font-size:12px; background:var(--accent); border-radius:6px;">انتخاب</button>
+            </div>
+          `;
+          row.querySelector("button").addEventListener("click", () => {
+            adjustSelectedUserId.value = u.id;
+            adjustSelectedUserName.textContent = `${u.name} ${u.family} (موجودی فعلی: ${u.balance} یارو)`;
+            adjustMsg.className = "msg hidden";
+          });
+          allUsersBalanceList.appendChild(row);
+        });
+      } catch (err) {
+        allUsersBalanceList.innerHTML = `<div class="msg err">خطا در دریافت موجودی‌ها</div>`;
+      }
+    }
+
+    // ارسال تغییر موجودی دستی ادمین
+    confirmAdjustBtn.addEventListener("click", async () => {
+      const targetId = adjustSelectedUserId.value;
+      const delta = parseInt(adjustDeltaInput.value, 10);
+      const reason = adjustReasonInput.value.trim();
+
+      if (!targetId) {
+        adjustMsg.textContent = "لطفاً ابتدا از فهرست بالا یک کاربر را انتخاب کنید.";
+        adjustMsg.className = "msg err";
+        return;
+      }
+      if (isNaN(delta) || delta === 0) {
+        adjustMsg.textContent = "لطفاً یک مقدار معتبر (مثبت یا منفی) وارد کنید.";
+        adjustMsg.className = "msg err";
+        return;
+      }
+      if (!reason || reason.length < 2) {
+        adjustMsg.textContent = "وارد کردن دلیل تغییر الزامی است.";
+        adjustMsg.className = "msg err";
+        return;
+      }
+
+      confirmAdjustBtn.disabled = true;
+      adjustMsg.textContent = "در حال اعمال تغییر در دیتابیس...";
+      adjustMsg.className = "msg ok";
+
+      try {
+        const { data, error } = await client.rpc("admin_adjust_balance_yaro", {
+          p_admin_id: currentUser.id,
+          p_target_user_id: parseInt(targetId, 10),
+          p_delta: delta,
+          p_reason: reason
+        });
+
+        if (error || !data || !data.ok) {
+          adjustMsg.textContent = "خطا در عملیات: " + (error?.message || data?.error || "ناشناخته");
+          adjustMsg.className = "msg err";
+          confirmAdjustBtn.disabled = false;
+          return;
+        }
+
+        adjustMsg.textContent = "موجودی با موفقیت اصلاح شد و پیام برای کاربر ارسال گردید.";
+        adjustMsg.className = "msg ok";
+        confirmAdjustBtn.disabled = false;
+        adjustDeltaInput.value = "";
+        adjustReasonInput.value = "";
+
+        loadAllUsersBalances();
+      } catch (err) {
+        adjustMsg.textContent = "خطای سرور: " + err.message;
+        adjustMsg.className = "msg err";
+        confirmAdjustBtn.disabled = false;
+      }
+    });
+
+    document.getElementById("backFromManageBalancesBtn").addEventListener("click", () => {
+      showDashboard(currentUser);
+    });
+
     (function checkSession() {
       try {
         const saved = localStorage.getItem("yaro_session");
@@ -1027,6 +1210,7 @@
       } catch (e) {}
       showLogin();
     })();
+
   </script>
 </body>
 </html>
