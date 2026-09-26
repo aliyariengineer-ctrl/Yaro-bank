@@ -64,19 +64,15 @@
     }
     input, textarea {
       width: 100%;
-      box-sizing: border-box;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      padding: 14px;
       background: #0b1426;
-      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      color: #fff;
+      font-size: 15px;
+      box-sizing: border-box;
       outline: none;
       font-family: inherit;
-    }
-    input {
-      letter-spacing: 4px;
-      font-size: 20px;
-      text-align: center;
     }
     input:focus, textarea:focus {
       border-color: var(--accent);
@@ -88,14 +84,15 @@
     }
     button {
       flex: 1;
-      border: 0;
-      border-radius: 12px;
-      padding: 14px;
-      cursor: pointer;
       background: var(--accent);
-      color: white;
-      font-weight: 700;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
       font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
       transition: 0.15s;
     }
     button:disabled {
@@ -110,9 +107,9 @@
       background: #1b2947;
       margin-top: 10px;
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      padding: 16px 20px;
     }
     .btn-danger {
       background: var(--danger);
@@ -153,37 +150,38 @@
     .hidden {
       display: none !important;
     }
-
     .badge {
       background: var(--badge-orange);
       color: #fff;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
-      min-width: 20px;
-      height: 20px;
-      border-radius: 50%;
+      min-width: 22px;
+      height: 22px;
+      border-radius: 11px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0 4px;
+      padding: 0 6px;
       box-sizing: border-box;
     }
     .list-item {
       background: #0b1426;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-      margin-bottom: 8px;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
+      transition: 0.15s;
     }
     .list-item:hover {
       border-color: var(--accent);
+      background: #111e38;
     }
     .box-container {
-      max-height: 280px;
+      max-height: 320px;
       overflow-y: auto;
       margin-top: 12px;
     }
@@ -224,7 +222,7 @@
       <div class="msg hidden" id="loginMsg"></div>
     </div>
 
-    <!-- داشبورد اصلی -->
+    <!-- داشبورد اصلی کاربر -->
     <div class="card hidden" id="dashCard">
       <div class="brand" id="welcomeText">خوش آمدید</div>
       <div class="sub" id="roleText">نقش: دانش‌آموز</div>
@@ -235,46 +233,54 @@
       </div>
 
       <button class="btn-action" id="openStudentsBtn" type="button">
-        <span>👥 فهرست دانش‌آموزان</span>
+        <span>👥 فهرست دانش‌آموزان کلاس</span>
         <span class="badge hidden" id="totalMsgBadge">0</span>
       </button>
 
       <button class="btn-action" id="openGovBtn" type="button">
-        <span>🏛 پیام‌های دولتی و اخطارها</span>
+        <span>🏛 صندوق پیام‌های دولتی و اخطارها</span>
         <span class="badge hidden" id="govMsgBadge">0</span>
       </button>
 
       <button class="btn-danger" id="logoutBtn" type="button">خروج از حساب</button>
     </div>
 
-    <!-- لیست دانش‌آموزان -->
+    <!-- صفحه لیست هم‌کلاسی‌ها (فقط اطلاعات مجاز بدون کد و موجودی) -->
     <div class="card hidden" id="studentsCard">
-      <div class="brand">لیست هم‌کلاسی‌ها</div>
-      <div class="sub">روی نام هر فرد بزنید تا گزینه‌ها را ببینید</div>
-      <div class="box-container" id="studentsList">در حال بارگذاری...</div>
+      <div class="brand">فهرست دانش‌آموزان</div>
+      <div class="sub">برای ارسال یارو، ثبت شکایت یا پیام، روی نام فرد بزنید:</div>
+      <div class="box-container" id="studentsList">در حال دریافت لیست دانش‌آموزان...</div>
       <button class="btn-secondary" id="backFromStudentsBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
 
-    <!-- پنل انتخاب عملیات برای یک دانش‌آموز -->
+    <!-- پنل انتخاب عملیات برای دانش‌آموز -->
     <div class="card hidden" id="studentActionCard">
       <div class="brand" id="targetStudentName">نام دانش‌آموز</div>
       <div class="sub">انتخاب عملیات</div>
 
-      <button class="btn-action" id="openTransferBtn">💳 واریز یارو</button>
-      <button class="btn-action" id="openComplaintBtn">⚖️ ثبت شکایت</button>
+      <button class="btn-action" id="openTransferBtn">
+        <span>💳 واریز یارو به حساب این فرد</span>
+        <span>⬅️</span>
+      </button>
+
+      <button class="btn-action" id="openComplaintBtn">
+        <span>⚖️ ثبت شکایت رسمی علیه این فرد</span>
+        <span>⬅️</span>
+      </button>
+
       <button class="btn-action" id="openChatBtn">
-        <span>💬 ارسال و مشاهده پیام</span>
+        <span>💬 گفت‌وگو و ارسال پیام شخصی</span>
         <span class="badge hidden" id="userMsgBadge">0</span>
       </button>
 
-      <button class="btn-secondary" id="backFromActionBtn" style="width: 100%; margin-top: 14px;">بازگشت به لیست</button>
+      <button class="btn-secondary" id="backFromActionBtn" style="width: 100%; margin-top: 14px;">بازگشت به فهرست</button>
     </div>
 
-    <!-- بخش انتقال وجه -->
+    <!-- کارت انتقال یارو -->
     <div class="card hidden" id="transferCard">
       <div class="brand" id="transferTargetName">واریز یارو</div>
       <div class="sub">مبلغ مورد نظر را وارد کنید</div>
-      <input id="transferAmount" type="number" placeholder="مبلغ به یارو" style="text-align: center; letter-spacing: 0;" />
+      <input id="transferAmount" type="number" placeholder="مثلاً: 50" style="text-align: center;" />
       <div class="msg hidden" id="transferMsg"></div>
       <div class="btn-row">
         <button id="confirmTransferBtn">تأیید و انتقال</button>
@@ -282,11 +288,11 @@
       </div>
     </div>
 
-    <!-- بخش ثبت شکایت -->
+    <!-- کارت ثبت شکایت -->
     <div class="card hidden" id="complaintCard">
-      <div class="brand" id="complaintTargetName">ثبت شکایت</div>
+      <div class="brand" id="complaintTargetName">ثبت شکایت رسمی</div>
       <div class="sub">علت یا متن گزارش خود را بنویسید</div>
-      <textarea id="complaintText" rows="3" placeholder="توضیحات شکایت..."></textarea>
+      <textarea id="complaintText" rows="3" placeholder="شرح تخلف یا شکایت..."></textarea>
       <div class="msg hidden" id="complaintMsg"></div>
       <div class="btn-row">
         <button id="confirmComplaintBtn">ارسال شکایت</button>
@@ -294,13 +300,13 @@
       </div>
     </div>
 
-    <!-- صفحه چت -->
+    <!-- صفحه چت پیام خصوصی -->
     <div class="card hidden" id="chatCard">
       <div class="brand" id="chatTargetName">گفت‌وگو</div>
       <div class="box-container" id="chatMessages" style="min-height: 180px;"></div>
       
       <div style="margin-top: 12px;">
-        <textarea id="chatInput" rows="2" placeholder="متن پیام خود را بنویسید..."></textarea>
+        <textarea id="chatInput" rows="2" placeholder="پیام خود را بنویسید..."></textarea>
         <button id="sendChatBtn" style="width: 100%; margin-top: 8px;">ارسال پیام</button>
       </div>
 
@@ -310,7 +316,7 @@
     <!-- صفحه پیام‌های دولتی -->
     <div class="card hidden" id="govCard">
       <div class="brand">پیام‌های دولتی و اخطاریه</div>
-      <div class="sub">رویدادها، واریزها و گزارش‌های مربوط به شما</div>
+      <div class="sub">رویدادها و اعلان‌های مربوط به شما</div>
       <div class="box-container" id="govMessagesList">در حال بارگذاری...</div>
       <button class="btn-secondary" id="backFromGovBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
@@ -319,7 +325,7 @@
 
   <script>
     const SUPABASE_URL = "https://ftdcgqcacweiqdttkhdq.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_-zN3T9tEQIyyoWSGkYtObw_D-vYMUHt";
+    const SUPABASE_KEY = "GAPGPTMASKTOKENyl7qkztq6aX0X";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -422,72 +428,94 @@
 
     async function fetchUnreadCounts() {
       if (!currentUser) return;
+      try {
+        const { data: messages } = await client
+          .from("messages")
+          .select("sender_id")
+          .eq("receiver_id", currentUser.id)
+          .eq("is_read", false);
 
-      const { data: messages } = await client
-        .from("messages")
-        .select("sender_id")
-        .eq("receiver_id", currentUser.id)
-        .eq("is_read", false);
+        unreadCountMap = {};
+        let totalUnread = 0;
 
-      unreadCountMap = {};
-      let totalUnread = 0;
+        if (messages) {
+          messages.forEach(m => {
+            unreadCountMap[m.sender_id] = (unreadCountMap[m.sender_id] || 0) + 1;
+            totalUnread++;
+          });
+        }
 
-      if (messages) {
-        messages.forEach(m => {
-          unreadCountMap[m.sender_id] = (unreadCountMap[m.sender_id] || 0) + 1;
-          totalUnread++;
-        });
-      }
+        if (totalUnread > 0) {
+          totalMsgBadge.textContent = totalUnread;
+          totalMsgBadge.classList.remove("hidden");
+        } else {
+          totalMsgBadge.classList.add("hidden");
+        }
 
-      if (totalUnread > 0) {
-        totalMsgBadge.textContent = totalUnread;
-        totalMsgBadge.classList.remove("hidden");
-      } else {
-        totalMsgBadge.classList.add("hidden");
-      }
+        const { data: govMsgs } = await client
+          .from("system_notifications")
+          .select("id")
+          .eq("user_id", currentUser.id)
+          .eq("is_read", false);
 
-      const { data: govMsgs } = await client
-        .from("system_notifications")
-        .select("id")
-        .eq("user_id", currentUser.id)
-        .eq("is_read", false);
-
-      if (govMsgs && govMsgs.length > 0) {
-        govMsgBadge.textContent = govMsgs.length;
-        govMsgBadge.classList.remove("hidden");
-      } else {
-        govMsgBadge.classList.add("hidden");
+        if (govMsgs && govMsgs.length > 0) {
+          govMsgBadge.textContent = govMsgs.length;
+          govMsgBadge.classList.remove("hidden");
+        } else {
+          govMsgBadge.classList.add("hidden");
+        }
+      } catch (e) {
+        console.error("خطا در خواندن پیام‌ها:", e);
       }
     }
 
+    // واکشی امن: فقط از public_students که فاقد login_code و balance است
     openStudentsBtn.addEventListener("click", async () => {
       hideAllCards();
       studentsCard.classList.remove("hidden");
-      studentsList.innerHTML = "در حال بارگذاری اسامی...";
+      studentsList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری لیست دانش‌آموزان...</div>";
 
-      const { data: users, error } = await client
-        .from("users")
-        .select("id, name, family, role")
-        .neq("id", currentUser.id)
-        .order("family", { ascending: true });
+      try {
+        const { data: users, error } = await client
+          .from("public_students")
+          .select("id, name, family, role")
+          .neq("id", currentUser.id)
+          .order("id", { ascending: true });
 
-      if (error || !users) {
-        studentsList.innerHTML = "خطا در بارگذاری فهرست.";
-        return;
+        if (error) {
+          studentsList.innerHTML = `<div class="msg err">خطا در بارگذاری فهرست: ${error.message}</div>`;
+          return;
+        }
+
+        if (!users || users.length === 0) {
+          studentsList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>دانش‌آموز دیگری در سامانه ثبت نشده است.</div>";
+          return;
+        }
+
+        studentsList.innerHTML = "";
+        users.forEach(u => {
+          const item = document.createElement("div");
+          item.className = "list-item";
+          
+          const unreadForUser = unreadCountMap[u.id] || 0;
+          const badgeHtml = unreadForUser > 0 
+            ? `<span class="badge">${unreadForUser} پیام</span>` 
+            : `<span style="color:var(--muted); font-size:12px;">انتخاب ⬅️</span>`;
+
+          item.innerHTML = `
+            <div>
+              <b style="font-size:15px;">${u.name} ${u.family}</b>
+              <div style="font-size:12px; color:var(--muted); margin-top:3px;">${u.role || "دانش‌آموز"}</div>
+            </div>
+            <div>${badgeHtml}</div>
+          `;
+          item.addEventListener("click", () => openStudentAction(u));
+          studentsList.appendChild(item);
+        });
+
+      } catch (err) {
+        studentsList.innerHTML = `<div class="msg err">خطا در ارتباط با سرور: ${err.message}</div>`;
       }
-
-      studentsList.innerHTML = "";
-      users.forEach(u => {
-        const item = document.createElement("div");
-        item.className = "list-item";
-        
-        const unreadForUser = unreadCountMap[u.id] || 0;
-        const badgeHtml = unreadForUser > 0 ? `<span class="badge">${unreadForUser}</span>` : "";
-
-        item.innerHTML = `<span>${u.name} ${u.family} (${u.role || "دانش‌آموز"})</span> ${badgeHtml}`;
-        item.addEventListener("click", () => openStudentAction(u));
-        studentsList.appendChild(item);
-      });
     });
 
     document.getElementById("backFromStudentsBtn").addEventListener("click", () => {
@@ -536,27 +564,36 @@
       }
 
       confirmTransferBtn.disabled = true;
-      transferMsg.textContent = "در حال ثبت واریز...";
+      transferMsg.textContent = "در حال انتقال یارو...";
       transferMsg.className = "msg ok";
 
-      // ثبت اعلان واریز برای گیرنده
-      await client.from("system_notifications").insert({
+      const { error } = await client.from("system_notifications").insert({
         user_id: selectedStudent.id,
         title: "واریز یارو",
         body: `مبلغ ${amount} یارو از طرف ${currentUser.name} ${currentUser.family} به حساب شما واریز شد.`
       });
 
+      if (error) {
+        transferMsg.textContent = "خطا در انتقال: " + error.message;
+        transferMsg.className = "msg err";
+        confirmTransferBtn.disabled = false;
+        return;
+      }
+
+      currentUser.balance = (currentUser.balance || 0) - amount;
+      balanceText.textContent = currentUser.balance;
+
       transferMsg.textContent = `مبلغ ${amount} یارو با موفقیت منتقل شد.`;
       transferMsg.className = "msg ok";
       confirmTransferBtn.disabled = false;
-      setTimeout(() => openStudentAction(selectedStudent), 1200);
+      setTimeout(() => openStudentAction(selectedStudent), 1400);
     });
 
     document.getElementById("backFromTransferBtn").addEventListener("click", () => {
       openStudentAction(selectedStudent);
     });
 
-    // عملیات شکایت
+    // عملیات ثبت شکایت
     openComplaintBtn.addEventListener("click", () => {
       hideAllCards();
       complaintCard.classList.remove("hidden");
@@ -568,7 +605,7 @@
     confirmComplaintBtn.addEventListener("click", async () => {
       const text = complaintText.value.trim();
       if (!text) {
-        complaintMsg.textContent = "لطفاً متن شکایت را بنویسید.";
+        complaintMsg.textContent = "لطفاً توضیحات شکایت خود را بنویسید.";
         complaintMsg.className = "msg err";
         return;
       }
@@ -577,17 +614,23 @@
       complaintMsg.textContent = "در حال ثبت شکایت...";
       complaintMsg.className = "msg ok";
 
-      // ثبت اعلان شکایت برای طرف مقابل
-      await client.from("system_notifications").insert({
+      const { error } = await client.from("system_notifications").insert({
         user_id: selectedStudent.id,
-        title: "اخطاریه شکایت جدید",
-        body: `شکایتی با متن «${text}» از سوی یکی از هم‌کلاسی‌ها علیه شما به ثبت رسید.`
+        title: "اخطار و شکایت ثبت‌شده",
+        body: `شکایتی علیه شما با موضوع «${text}» توسط یکی از اعضا ثبت شده است.`
       });
 
-      complaintMsg.textContent = "شکایت با موفقیت ثبت شد.";
+      if (error) {
+        complaintMsg.textContent = "خطا در ثبت: " + error.message;
+        complaintMsg.className = "msg err";
+        confirmComplaintBtn.disabled = false;
+        return;
+      }
+
+      complaintMsg.textContent = "شکایت با موفقیت در سیستم ثبت گردید.";
       complaintMsg.className = "msg ok";
       confirmComplaintBtn.disabled = false;
-      setTimeout(() => openStudentAction(selectedStudent), 1200);
+      setTimeout(() => openStudentAction(selectedStudent), 1400);
     });
 
     document.getElementById("backFromComplaintBtn").addEventListener("click", () => {
@@ -605,31 +648,35 @@
     async function loadMessages() {
       chatMessages.innerHTML = "در حال بارگذاری پیام‌ها...";
 
-      await client
-        .from("messages")
-        .update({ is_read: true })
-        .eq("sender_id", selectedStudent.id)
-        .eq("receiver_id", currentUser.id);
+      try {
+        await client
+          .from("messages")
+          .update({ is_read: true })
+          .eq("sender_id", selectedStudent.id)
+          .eq("receiver_id", currentUser.id);
 
-      const { data: msgs } = await client
-        .from("messages")
-        .select("*")
-        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.id})`)
-        .order("created_at", { ascending: true });
+        const { data: msgs } = await client
+          .from("messages")
+          .select("*")
+          .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.id})`)
+          .order("created_at", { ascending: true });
 
-      if (!msgs || msgs.length === 0) {
-        chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center;'>هنوز پیامی وجود ندارد.</div>";
-        return;
+        if (!msgs || msgs.length === 0) {
+          chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center; padding:20px;'>هنوز گفت‌وگویی صورت نگرفته است. اولین پیام را بفرستید!</div>";
+          return;
+        }
+
+        chatMessages.innerHTML = "";
+        msgs.forEach(m => {
+          const b = document.createElement("div");
+          b.className = "chat-bubble " + (m.sender_id === currentUser.id ? "chat-out" : "chat-in");
+          b.textContent = m.body;
+          chatMessages.appendChild(b);
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } catch (err) {
+        chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center; padding:20px;'>خطا در نمایش پیام‌ها.</div>";
       }
-
-      chatMessages.innerHTML = "";
-      msgs.forEach(m => {
-        const b = document.createElement("div");
-        b.className = "chat-bubble " + (m.sender_id === currentUser.id ? "chat-out" : "chat-in");
-        b.textContent = m.body;
-        chatMessages.appendChild(b);
-      });
-      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     sendChatBtn.addEventListener("click", async () => {
@@ -656,46 +703,50 @@
     openGovBtn.addEventListener("click", async () => {
       hideAllCards();
       govCard.classList.remove("hidden");
-      govMessagesList.innerHTML = "در حال بارگذاری...";
+      govMessagesList.innerHTML = "در حال بارگذاری اعلان‌ها...";
 
-      await client
-        .from("system_notifications")
-        .update({ is_read: true })
-        .eq("user_id", currentUser.id);
+      try {
+        await client
+          .from("system_notifications")
+          .update({ is_read: true })
+          .eq("user_id", currentUser.id);
 
-      const { data: notes } = await client
-        .from("system_notifications")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .order("created_at", { ascending: false });
+        const { data: notes } = await client
+          .from("system_notifications")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .order("created_at", { ascending: false });
 
-      govMessagesList.innerHTML = "";
-      if (!notes || notes.length === 0) {
-        govMessagesList.innerHTML = "<div style='color:var(--muted); text-align:center;'>هیچ پیامی ثبت نشده است.</div>";
-        return;
+        govMessagesList.innerHTML = "";
+        if (!notes || notes.length === 0) {
+          govMessagesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:20px;'>هیچ پیام یا اخطاری برای شما ثبت نشده است.</div>";
+          return;
+        }
+
+        notes.forEach(n => {
+          const item = document.createElement("div");
+          item.className = "list-item";
+          item.style.flexDirection = "column";
+          item.style.alignItems = "flex-start";
+          item.innerHTML = `<b style="color:var(--accent);">${n.title}</b><p style="margin:6px 0 0 0; font-size:13px; line-height:1.5;">${n.body}</p>`;
+          govMessagesList.appendChild(item);
+        });
+      } catch (err) {
+        govMessagesList.innerHTML = "<div style='color:var(--muted); text-align:center;'>خطا در نمایش اعلان‌ها.</div>";
       }
-
-      notes.forEach(n => {
-        const item = document.createElement("div");
-        item.className = "list-item";
-        item.style.flexDirection = "column";
-        item.style.alignItems = "flex-start";
-        item.innerHTML = `<b style="color:var(--accent);">${n.title}</b><p style="margin:6px 0 0 0; font-size:13px;">${n.body}</p>`;
-        govMessagesList.appendChild(item);
-      });
     });
 
     document.getElementById("backFromGovBtn").addEventListener("click", () => {
       showDashboard(currentUser);
     });
 
-    // تابع ورود
+    // ورود
     async function login() {
       hideMsg();
       const code = (codeInput.value || "").trim();
 
       if (code.length !== 5 || isNaN(code)) {
-        showMsg("کد ورود باید دقیقاً یک عدد ۵ رقمی باشد.", "err");
+        showMsg("کد ورود باید یک عدد ۵ رقمی باشد.", "err");
         return;
       }
 
@@ -705,17 +756,12 @@
         const { data, error } = await client.rpc("verify_login", { entered_code: code });
 
         if (error) {
-          console.error("Supabase Error:", error);
-          if (error.message && error.message.includes("RATE_LIMIT")) {
-             showMsg("تعداد تلاش‌های ناموفق زیاد بوده. لطفاً کمی صبر کنید.", "err");
-          } else {
-             showMsg("خطا در ارتباط با سرور: " + error.message, "err");
-          }
+          showMsg("خطا در ورود: " + error.message, "err");
           return;
         }
 
         if (!data || data.length === 0) {
-          showMsg("کد وارد شده صحیح نیست.", "err");
+          showMsg("کد ۵ رقمی اشتباه است.", "err");
           return;
         }
 
@@ -724,8 +770,7 @@
         showDashboard(user);
 
       } catch (err) {
-        console.error(err);
-        showMsg("خطای غیرمنتظره در برنامه رخ داد.", "err");
+        showMsg("خطای غیرمنتظره در برقراری ارتباط.", "err");
       } finally {
         setLoading(false);
       }
@@ -752,8 +797,7 @@
       try {
         const saved = localStorage.getItem("yaro_session");
         if (saved) {
-          const user = JSON.parse(saved);
-          showDashboard(user);
+          showDashboard(JSON.parse(saved));
           return;
         }
       } catch (e) {}
