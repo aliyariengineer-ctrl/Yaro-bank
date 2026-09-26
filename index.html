@@ -229,7 +229,7 @@
       codeInput.focus();
     }
 
-    async function login() {
+        async function login() {
       hideMsg();
       const code = (codeInput.value || "").trim();
 
@@ -245,12 +245,17 @@
 
         if (error) {
           console.error("Supabase Error:", error);
-          showMsg("خطا در برقراری ارتباط با دیتابیس یا تابع ورود.", "err");
+          // تشخیص خطای محدودیت تعداد تلاش
+          if (error.message && error.message.includes("RATE_LIMIT")) {
+             showMsg("تعداد تلاش‌های ناموفق زیاد بوده. لطفاً چند دقیقه صبر کنید.", "err");
+          } else {
+             showMsg("خطا در ارتباط با سرور: " + error.message, "err");
+          }
           return;
         }
 
         if (!data || data.length === 0) {
-          showMsg("کد وارد شده اشتباه است یا کاربری با این کد وجود ندارد.", "err");
+          showMsg("کد وارد شده صحیح نیست.", "err");
           return;
         }
 
