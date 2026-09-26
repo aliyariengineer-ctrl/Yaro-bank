@@ -477,7 +477,7 @@
     }
 
 
-    function showDashboard(user) {
+     function showDashboard(user) {
       currentUser = user;
       hideAllCards();
       dashCard.classList.remove("hidden");
@@ -486,8 +486,19 @@
       roleText.textContent = `سمت / نقش: ${user.role || "دانش‌آموز"}`;
       balanceText.textContent = user.balance ?? 0;
 
+      // نمایش دکمه‌های ادمین فقط در صورتی که کاربر ادمین باشد
+      if (user.role === "admin") {
+        openLedgerBtn.classList.remove("hidden");
+        openManageBalancesBtn.classList.remove("hidden");
+        fetchLedgerBadge();
+      } else {
+        openLedgerBtn.classList.add("hidden");
+        openManageBalancesBtn.classList.add("hidden");
+      }
+
       fetchUnreadCounts();
     }
+
 
     function showLogin() {
       currentUser = null;
