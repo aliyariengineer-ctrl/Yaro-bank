@@ -337,6 +337,41 @@
       <div class="box-container" id="govMessagesList">در حال بارگذاری...</div>
       <button class="btn-secondary" id="backFromGovBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
+    <!-- کارت دفتر کل برای ادمین -->
+    <div class="card hidden" id="ledgerCard">
+      <div class="brand">دفتر کل تراکنش‌ها</div>
+      <div class="sub">تاریخچه تمام نقل‌وانتقالات ثبت‌شده</div>
+      <div class="box-container" id="ledgerList" style="max-height: 380px;">در حال بارگذاری دفتر کل...</div>
+      <button class="btn-secondary" id="backFromLedgerBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
+    </div>
+
+    <!-- کارت مشاهده همه موجودی‌ها و افزایش/کاهش برای ادمین -->
+    <div class="card hidden" id="manageBalancesCard">
+      <div class="brand">مدیریت موجودی کاربران</div>
+      <div class="sub">مشاهده موجودی همه و تغییر دستی</div>
+
+      <div class="box-container" id="allUsersBalanceList" style="max-height: 240px; margin-bottom: 15px;">در حال بارگذاری...</div>
+
+      <!-- فرم اعمال تغییرات -->
+      <div style="background: #0b1426; border: 1px solid var(--border); border-radius: 12px; padding: 14px;">
+        <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+          کاربر انتخاب‌شده: <b id="adjustSelectedUserName" style="color: var(--accent);">هیچ کاربری انتخاب نشده</b>
+        </div>
+        <input type="hidden" id="adjustSelectedUserId" value="" />
+        
+        <label for="adjustDeltaInput">مقدار تغییر موجودی (مثبت برای افزایش، منفی برای کسر):</label>
+        <input id="adjustDeltaInput" type="number" placeholder="مثلاً: 20 یا -15" style="margin-bottom: 10px; text-align: center;" />
+
+        <label for="adjustReasonInput">دلیل تغییر (الزامی):</label>
+        <input id="adjustReasonInput" type="text" placeholder="مثلاً: پاداش فعالیت، جریمه و..." autocomplete="off" />
+
+        <div class="msg hidden" id="adjustMsg"></div>
+
+        <button id="confirmAdjustBtn" style="width: 100%; margin-top: 12px; background: var(--ok);">ثبت و اعمال در حساب</button>
+      </div>
+
+      <button class="btn-secondary" id="backFromManageBalancesBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
+    </div>
 
   </div>
 
