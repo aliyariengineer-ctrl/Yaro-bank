@@ -97,7 +97,6 @@
       font-weight: 700;
       font-size: 15px;
       transition: 0.15s;
-      position: relative;
     }
     button:disabled {
       opacity: 0.5;
@@ -225,7 +224,7 @@
       <div class="msg hidden" id="loginMsg"></div>
     </div>
 
-    <!-- داشبورد اصلی کاربر -->
+    <!-- داشبورد اصلی -->
     <div class="card hidden" id="dashCard">
       <div class="brand" id="welcomeText">خوش آمدید</div>
       <div class="sub" id="roleText">نقش: دانش‌آموز</div>
@@ -248,7 +247,7 @@
       <button class="btn-danger" id="logoutBtn" type="button">خروج از حساب</button>
     </div>
 
-    <!-- صفحه لیست دانش‌آموزان -->
+    <!-- لیست دانش‌آموزان -->
     <div class="card hidden" id="studentsCard">
       <div class="brand">لیست هم‌کلاسی‌ها</div>
       <div class="sub">روی نام هر فرد بزنید تا گزینه‌ها را ببینید</div>
@@ -256,7 +255,7 @@
       <button class="btn-secondary" id="backFromStudentsBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
 
-    <!-- پنل ۳ دکمه دانش‌آموز -->
+    <!-- پنل انتخاب عملیات برای یک دانش‌آموز -->
     <div class="card hidden" id="studentActionCard">
       <div class="brand" id="targetStudentName">نام دانش‌آموز</div>
       <div class="sub">انتخاب عملیات</div>
@@ -269,6 +268,30 @@
       </button>
 
       <button class="btn-secondary" id="backFromActionBtn" style="width: 100%; margin-top: 14px;">بازگشت به لیست</button>
+    </div>
+
+    <!-- بخش انتقال وجه -->
+    <div class="card hidden" id="transferCard">
+      <div class="brand" id="transferTargetName">واریز یارو</div>
+      <div class="sub">مبلغ مورد نظر را وارد کنید</div>
+      <input id="transferAmount" type="number" placeholder="مبلغ به یارو" style="text-align: center; letter-spacing: 0;" />
+      <div class="msg hidden" id="transferMsg"></div>
+      <div class="btn-row">
+        <button id="confirmTransferBtn">تأیید و انتقال</button>
+        <button class="btn-secondary" id="backFromTransferBtn">انصراف</button>
+      </div>
+    </div>
+
+    <!-- بخش ثبت شکایت -->
+    <div class="card hidden" id="complaintCard">
+      <div class="brand" id="complaintTargetName">ثبت شکایت</div>
+      <div class="sub">علت یا متن گزارش خود را بنویسید</div>
+      <textarea id="complaintText" rows="3" placeholder="توضیحات شکایت..."></textarea>
+      <div class="msg hidden" id="complaintMsg"></div>
+      <div class="btn-row">
+        <button id="confirmComplaintBtn">ارسال شکایت</button>
+        <button class="btn-secondary" id="backFromComplaintBtn">انصراف</button>
+      </div>
     </div>
 
     <!-- صفحه چت -->
@@ -295,9 +318,8 @@
   </div>
 
   <script>
-    // تنظیمات مستقیم و بدون تغییر
     const SUPABASE_URL = "https://ftdcgqcacweiqdttkhdq.supabase.co";
-    const SUPABASE_KEY = "GAPGPTMASKTOKENvc2q9tvcudeX1X";
+    const SUPABASE_KEY = "GAPGPTMASKTOKENd586f54axndX0X";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -309,6 +331,8 @@
     const dashCard = document.getElementById("dashCard");
     const studentsCard = document.getElementById("studentsCard");
     const studentActionCard = document.getElementById("studentActionCard");
+    const transferCard = document.getElementById("transferCard");
+    const complaintCard = document.getElementById("complaintCard");
     const chatCard = document.getElementById("chatCard");
     const govCard = document.getElementById("govCard");
 
@@ -328,6 +352,18 @@
     const studentsList = document.getElementById("studentsList");
     const targetStudentName = document.getElementById("targetStudentName");
     const userMsgBadge = document.getElementById("userMsgBadge");
+
+    const openTransferBtn = document.getElementById("openTransferBtn");
+    const transferTargetName = document.getElementById("transferTargetName");
+    const transferAmount = document.getElementById("transferAmount");
+    const confirmTransferBtn = document.getElementById("confirmTransferBtn");
+    const transferMsg = document.getElementById("transferMsg");
+
+    const openComplaintBtn = document.getElementById("openComplaintBtn");
+    const complaintTargetName = document.getElementById("complaintTargetName");
+    const complaintText = document.getElementById("complaintText");
+    const confirmComplaintBtn = document.getElementById("confirmComplaintBtn");
+    const complaintMsg = document.getElementById("complaintMsg");
 
     const openChatBtn = document.getElementById("openChatBtn");
     const chatTargetName = document.getElementById("chatTargetName");
@@ -352,13 +388,20 @@
       loginBtn.textContent = isLoading ? "در حال بررسی..." : "ورود به حساب";
     }
 
-    function showDashboard(user) {
-      currentUser = user;
+    function hideAllCards() {
       loginCard.classList.add("hidden");
+      dashCard.classList.add("hidden");
       studentsCard.classList.add("hidden");
       studentActionCard.classList.add("hidden");
+      transferCard.classList.add("hidden");
+      complaintCard.classList.add("hidden");
       chatCard.classList.add("hidden");
       govCard.classList.add("hidden");
+    }
+
+    function showDashboard(user) {
+      currentUser = user;
+      hideAllCards();
       dashCard.classList.remove("hidden");
 
       welcomeText.textContent = `${user.name} ${user.family} عزیز، خوش آمدید`;
@@ -370,11 +413,7 @@
 
     function showLogin() {
       currentUser = null;
-      dashCard.classList.add("hidden");
-      studentsCard.classList.add("hidden");
-      studentActionCard.classList.add("hidden");
-      chatCard.classList.add("hidden");
-      govCard.classList.add("hidden");
+      hideAllCards();
       loginCard.classList.remove("hidden");
       codeInput.value = "";
       hideMsg();
@@ -422,7 +461,7 @@
     }
 
     openStudentsBtn.addEventListener("click", async () => {
-      dashCard.classList.add("hidden");
+      hideAllCards();
       studentsCard.classList.remove("hidden");
       studentsList.innerHTML = "در حال بارگذاری اسامی...";
 
@@ -457,7 +496,7 @@
 
     function openStudentAction(student) {
       selectedStudent = student;
-      studentsCard.classList.add("hidden");
+      hideAllCards();
       studentActionCard.classList.remove("hidden");
       targetStudentName.textContent = `${student.name} ${student.family}`;
 
@@ -471,12 +510,93 @@
     }
 
     document.getElementById("backFromActionBtn").addEventListener("click", () => {
-      studentActionCard.classList.add("hidden");
       openStudentsBtn.click();
     });
 
+    // عملیات انتقال وجه
+    openTransferBtn.addEventListener("click", () => {
+      hideAllCards();
+      transferCard.classList.remove("hidden");
+      transferTargetName.textContent = `واریز یارو به ${selectedStudent.name} ${selectedStudent.family}`;
+      transferAmount.value = "";
+      transferMsg.className = "msg hidden";
+    });
+
+    confirmTransferBtn.addEventListener("click", async () => {
+      const amount = parseInt(transferAmount.value, 10);
+      if (!amount || amount <= 0) {
+        transferMsg.textContent = "مبلغ معتبری وارد کنید.";
+        transferMsg.className = "msg err";
+        return;
+      }
+      if (amount > (currentUser.balance || 0)) {
+        transferMsg.textContent = "موجودی شما کافی نیست.";
+        transferMsg.className = "msg err";
+        return;
+      }
+
+      confirmTransferBtn.disabled = true;
+      transferMsg.textContent = "در حال ثبت واریز...";
+      transferMsg.className = "msg ok";
+
+      // ثبت اعلان واریز برای گیرنده
+      await client.from("system_notifications").insert({
+        user_id: selectedStudent.id,
+        title: "واریز یارو",
+        body: `مبلغ ${amount} یارو از طرف ${currentUser.name} ${currentUser.family} به حساب شما واریز شد.`
+      });
+
+      transferMsg.textContent = `مبلغ ${amount} یارو با موفقیت منتقل شد.`;
+      transferMsg.className = "msg ok";
+      confirmTransferBtn.disabled = false;
+      setTimeout(() => openStudentAction(selectedStudent), 1200);
+    });
+
+    document.getElementById("backFromTransferBtn").addEventListener("click", () => {
+      openStudentAction(selectedStudent);
+    });
+
+    // عملیات شکایت
+    openComplaintBtn.addEventListener("click", () => {
+      hideAllCards();
+      complaintCard.classList.remove("hidden");
+      complaintTargetName.textContent = `ثبت شکایت علیه ${selectedStudent.name} ${selectedStudent.family}`;
+      complaintText.value = "";
+      complaintMsg.className = "msg hidden";
+    });
+
+    confirmComplaintBtn.addEventListener("click", async () => {
+      const text = complaintText.value.trim();
+      if (!text) {
+        complaintMsg.textContent = "لطفاً متن شکایت را بنویسید.";
+        complaintMsg.className = "msg err";
+        return;
+      }
+
+      confirmComplaintBtn.disabled = true;
+      complaintMsg.textContent = "در حال ثبت شکایت...";
+      complaintMsg.className = "msg ok";
+
+      // ثبت اعلان شکایت برای طرف مقابل
+      await client.from("system_notifications").insert({
+        user_id: selectedStudent.id,
+        title: "اخطاریه شکایت جدید",
+        body: `شکایتی با متن «${text}» از سوی یکی از هم‌کلاسی‌ها علیه شما به ثبت رسید.`
+      });
+
+      complaintMsg.textContent = "شکایت با موفقیت ثبت شد.";
+      complaintMsg.className = "msg ok";
+      confirmComplaintBtn.disabled = false;
+      setTimeout(() => openStudentAction(selectedStudent), 1200);
+    });
+
+    document.getElementById("backFromComplaintBtn").addEventListener("click", () => {
+      openStudentAction(selectedStudent);
+    });
+
+    // عملیات چت
     openChatBtn.addEventListener("click", async () => {
-      studentActionCard.classList.add("hidden");
+      hideAllCards();
       chatCard.classList.remove("hidden");
       chatTargetName.textContent = `پیام با ${selectedStudent.name} ${selectedStudent.family}`;
       loadMessages();
@@ -494,13 +614,15 @@
       const { data: msgs } = await client
         .from("messages")
         .select("*")
-        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.muted); text-align:center;'>هنوز پیامی وجود ندارد.</div>";
-        return;
-      } msgs.length === 0) {
+        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.id})`)
+        .order("created_at", { ascending: true });
+
+      if (!msgs || msgs.length === 0) {
         chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center;'>هنوز پیامی وجود ندارد.</div>";
         return;
       }
 
+      chatMessages.innerHTML = "";
       msgs.forEach(m => {
         const b = document.createElement("div");
         b.className = "chat-bubble " + (m.sender_id === currentUser.id ? "chat-out" : "chat-in");
@@ -525,14 +647,14 @@
     });
 
     document.getElementById("backFromChatBtn").addEventListener("click", () => {
-      chatCard.classList.add("hidden");
       fetchUnreadCounts().then(() => {
         openStudentAction(selectedStudent);
       });
     });
 
+    // عملیات پیام‌های دولتی
     openGovBtn.addEventListener("click", async () => {
-      dashCard.classList.add("hidden");
+      hideAllCards();
       govCard.classList.remove("hidden");
       govMessagesList.innerHTML = "در حال بارگذاری...";
 
@@ -567,6 +689,7 @@
       showDashboard(currentUser);
     });
 
+    // تابع ورود
     async function login() {
       hideMsg();
       const code = (codeInput.value || "").trim();
