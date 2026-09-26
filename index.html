@@ -463,7 +463,7 @@
       loginBtn.textContent = isLoading ? "در حال بررسی..." : "ورود به حساب";
     }
 
-    function hideAllCards() {
+       function hideAllCards() {
       loginCard.classList.add("hidden");
       dashCard.classList.add("hidden");
       studentsCard.classList.add("hidden");
@@ -472,7 +472,10 @@
       complaintCard.classList.add("hidden");
       chatCard.classList.add("hidden");
       govCard.classList.add("hidden");
+      ledgerCard.classList.add("hidden");
+      manageBalancesCard.classList.add("hidden");
     }
+
 
     function showDashboard(user) {
       currentUser = user;
