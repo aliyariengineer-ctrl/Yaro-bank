@@ -17,6 +17,7 @@
       --danger: #ff5c7a;
       --ok: #28d17c;
       --border: #22304f;
+      --badge-orange: #ff9800;
     }
     body {
       margin: 0;
@@ -40,6 +41,7 @@
       border-radius: 16px;
       padding: 24px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      margin-bottom: 20px;
     }
     .brand {
       font-size: 22px;
@@ -60,7 +62,7 @@
       font-size: 13px;
       margin-bottom: 8px;
     }
-    input {
+    input, textarea {
       width: 100%;
       box-sizing: border-box;
       border-radius: 12px;
@@ -69,11 +71,14 @@
       background: #0b1426;
       color: var(--text);
       outline: none;
+      font-family: inherit;
+    }
+    input {
       letter-spacing: 4px;
       font-size: 20px;
       text-align: center;
     }
-    input:focus {
+    input:focus, textarea:focus {
       border-color: var(--accent);
     }
     .btn-row {
@@ -92,6 +97,7 @@
       font-weight: 700;
       font-size: 15px;
       transition: 0.15s;
+      position: relative;
     }
     button:disabled {
       opacity: 0.5;
@@ -100,6 +106,14 @@
     .btn-secondary {
       background: #243357;
       flex: 0.5;
+    }
+    .btn-action {
+      background: #1b2947;
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
     }
     .btn-danger {
       background: var(--danger);
@@ -140,6 +154,56 @@
     .hidden {
       display: none !important;
     }
+
+    /* استایل نشانگرها (Badge) */
+    .badge {
+      background: var(--badge-orange);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      box-sizing: border-box;
+    }
+    .list-item {
+      background: #0b1426;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .list-item:hover {
+      border-color: var(--accent);
+    }
+    .box-container {
+      max-height: 280px;
+      overflow-y: auto;
+      margin-top: 12px;
+    }
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .chat-in {
+      background: #1e2c4a;
+      text-align: right;
+    }
+    .chat-out {
+      background: #20417e;
+      text-align: left;
+    }
   </style>
 </head>
 
@@ -162,7 +226,7 @@
       <div class="msg hidden" id="loginMsg"></div>
     </div>
 
-    <!-- داشبورد کاربر پس از ورود -->
+    <!-- داشبورد اصلی کاربر -->
     <div class="card hidden" id="dashCard">
       <div class="brand" id="welcomeText">خوش آمدید</div>
       <div class="sub" id="roleText">نقش: دانش‌آموز</div>
@@ -172,7 +236,64 @@
         <div class="big-balance"><span id="balanceText">0</span> یارو</div>
       </div>
 
+      <!-- دکمه ورود به لیست دانش‌آموزان همراه نشانگر -->
+      <button class="btn-action" id="openStudentsBtn" type="button">
+        <span>👥 فهرست دانش‌آموزان</span>
+        <span class="badge hidden" id="totalMsgBadge">0</span>
+      </button>
+
+      <!-- دکمه ورود به پیام‌های دولتی و اعلانات -->
+      <button class="btn-action" id="openGovBtn" type="button">
+        <span>🏛 پیام‌های دولتی و اخطارها</span>
+        <span class="badge hidden" id="govMsgBadge">0</span>
+      </button>
+
       <button class="btn-danger" id="logoutBtn" type="button">خروج از حساب</button>
+    </div>
+
+    <!-- صفحه لیست دانش‌آموزان -->
+    <div class="card hidden" id="studentsCard">
+      <div class="brand">لیست هم‌کلاسی‌ها</div>
+      <div class="sub">روی نام هر فرد بزنید تا گزینه‌ها را ببینید</div>
+      <div class="box-container" id="studentsList">در حال بارگذاری...</div>
+      <button class="btn-secondary" id="backFromStudentsBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
+    </div>
+
+    <!-- پنل گزینه‌های دانش‌آموز انتخاب‌شده (۳ دکمه) -->
+    <div class="card hidden" id="studentActionCard">
+      <div class="brand" id="targetStudentName">نام دانش‌آموز</div>
+      <div class="sub">انتخاب عملیات</div>
+
+      <!-- ۳ بخش مورد نظر شما -->
+      <button class="btn-action" id="openTransferBtn">💳 واریز یارو</button>
+      <button class="btn-action" id="openComplaintBtn">⚖️ ثبت شکایت</button>
+      <button class="btn-action" id="openChatBtn">
+        <span>💬 ارسال و مشاهده پیام</span>
+        <span class="badge hidden" id="userMsgBadge">0</span>
+      </button>
+
+      <button class="btn-secondary" id="backFromActionBtn" style="width: 100%; margin-top: 14px;">بازگشت به لیست</button>
+    </div>
+
+    <!-- صفحه گفت‌وگو و ارسال پیام -->
+    <div class="card hidden" id="chatCard">
+      <div class="brand" id="chatTargetName">گفت‌وگو</div>
+      <div class="box-container" id="chatMessages" style="min-height: 180px;"></div>
+      
+      <div style="margin-top: 12px;">
+        <textarea id="chatInput" rows="2" placeholder="متن پیام خود را بنویسید..."></textarea>
+        <button id="sendChatBtn" style="width: 100%; margin-top: 8px;">ارسال پیام</button>
+      </div>
+
+      <button class="btn-secondary" id="backFromChatBtn" style="width: 100%; margin-top: 12px;">بازگشت</button>
+    </div>
+
+    <!-- صفحه پیام‌های دولتی -->
+    <div class="card hidden" id="govCard">
+      <div class="brand">پیام‌های دولتی و اخطاریه</div>
+      <div class="sub">رویدادها، واریزها و گزارش‌های مربوط به شما</div>
+      <div class="box-container" id="govMessagesList">در حال بارگذاری...</div>
+      <button class="btn-secondary" id="backFromGovBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
 
   </div>
@@ -180,13 +301,23 @@
   <script>
     // تنظیمات Supabase
     const SUPABASE_URL = "https://ftdcgqcacweiqdttkhdq.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_-zN3T9tEQIyyoWSGkYtObw_D-vYMUHt";
+    const SUPABASE_KEY = "GAPGPTMASKTOKENljox7d3paokX0X";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // المان‌های صفحه
+    // متغیرهای وضعیت
+    let currentUser = null;
+    let selectedStudent = null;
+    let unreadCountMap = {}; // تعداد پیام ناخوانده هر شخص
+
+    // المان‌های DOM
     const loginCard = document.getElementById("loginCard");
     const dashCard = document.getElementById("dashCard");
+    const studentsCard = document.getElementById("studentsCard");
+    const studentActionCard = document.getElementById("studentActionCard");
+    const chatCard = document.getElementById("chatCard");
+    const govCard = document.getElementById("govCard");
+
     const codeInput = document.getElementById("codeInput");
     const loginBtn = document.getElementById("loginBtn");
     const clearBtn = document.getElementById("clearBtn");
@@ -195,6 +326,20 @@
     const roleText = document.getElementById("roleText");
     const balanceText = document.getElementById("balanceText");
     const logoutBtn = document.getElementById("logoutBtn");
+
+    const openStudentsBtn = document.getElementById("openStudentsBtn");
+    const openGovBtn = document.getElementById("openGovBtn");
+    const totalMsgBadge = document.getElementById("totalMsgBadge");
+    const govMsgBadge = document.getElementById("govMsgBadge");
+    const studentsList = document.getElementById("studentsList");
+    const targetStudentName = document.getElementById("targetStudentName");
+    const userMsgBadge = document.getElementById("userMsgBadge");
+
+    const openChatBtn = document.getElementById("openChatBtn");
+    const chatTargetName = document.getElementById("chatTargetName");
+    const chatMessages = document.getElementById("chatMessages");
+    const chatInput = document.getElementById("chatInput");
+    const sendChatBtn = document.getElementById("sendChatBtn");
 
     function showMsg(text, type) {
       loginMsg.textContent = text;
@@ -214,22 +359,237 @@
     }
 
     function showDashboard(user) {
+      currentUser = user;
       loginCard.classList.add("hidden");
+      studentsCard.classList.add("hidden");
+      studentActionCard.classList.add("hidden");
+      chatCard.classList.add("hidden");
+      govCard.classList.add("hidden");
       dashCard.classList.remove("hidden");
+
       welcomeText.textContent = `${user.name} ${user.family} عزیز، خوش آمدید`;
       roleText.textContent = `سمت / نقش: ${user.role || "دانش‌آموز"}`;
       balanceText.textContent = user.balance ?? 0;
+
+      // بروزرسانی تعداد پیام‌ها و نشانگرها
+      fetchUnreadCounts();
     }
 
     function showLogin() {
+      currentUser = null;
       dashCard.classList.add("hidden");
+      studentsCard.classList.add("hidden");
+      studentActionCard.classList.add("hidden");
+      chatCard.classList.add("hidden");
+      govCard.classList.add("hidden");
       loginCard.classList.remove("hidden");
       codeInput.value = "";
       hideMsg();
       codeInput.focus();
     }
 
-        async function login() {
+    // دریافت وضعیت پیام‌های خوانده‌نشده
+    async function fetchUnreadCounts() {
+      if (!currentUser) return;
+
+      // ۱. پیام‌های شخصی خوانده‌نشده
+      const { data: messages } = await client
+        .from("messages")
+        .select("sender_id")
+        .eq("receiver_id", currentUser.id)
+        .eq("is_read", false);
+
+      unreadCountMap = {};
+      let totalUnread = 0;
+
+      if (messages) {
+        messages.forEach(m => {
+          unreadCountMap[m.sender_id] = (unreadCountMap[m.sender_id] || 0) + 1;
+          totalUnread++;
+        });
+      }
+
+      // تنظیم نشانگر روی دکمه لیست دانش‌آموزان
+      if (totalUnread > 0) {
+        totalMsgBadge.textContent = totalUnread;
+        totalMsgBadge.classList.remove("hidden");
+      } else {
+        totalMsgBadge.classList.add("hidden");
+      }
+
+      // ۲. پیام‌های دولتی خوانده‌نشده
+      const { data: govMsgs } = await client
+        .from("system_notifications")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .eq("is_read", false);
+
+      if (govMsgs && govMsgs.length > 0) {
+        govMsgBadge.textContent = govMsgs.length;
+        govMsgBadge.classList.remove("hidden");
+      } else {
+        govMsgBadge.classList.add("hidden");
+      }
+    }
+
+    // باز کردن لیست هم‌کلاسی‌ها
+    openStudentsBtn.addEventListener("click", async () => {
+      dashCard.classList.add("hidden");
+      studentsCard.classList.remove("hidden");
+      studentsList.innerHTML = "در حال بارگذاری اسامی...";
+
+      const { data: users, error } = await client
+        .from("users")
+        .select("id, name, family, role")
+        .neq("id", currentUser.id)
+        .order("family", { ascending: true });
+
+      if (error || !users) {
+        studentsList.innerHTML = "خطا در بارگذاری فهرست.";
+        return;
+      }
+
+      studentsList.innerHTML = "";
+      users.forEach(u => {
+        const item = document.createElement("div");
+        item.className = "list-item";
+        
+        const unreadForUser = unreadCountMap[u.id] || 0;
+        const badgeHtml = unreadForUser > 0 ? `<span class="badge">${unreadForUser}</span>` : "";
+
+        item.innerHTML = `<span>${u.name} ${u.family} (${u.role || "دانش‌آموز"})</span> ${badgeHtml}`;
+        item.addEventListener("click", () => openStudentAction(u));
+        studentsList.appendChild(item);
+      });
+    });
+
+    document.getElementById("backFromStudentsBtn").addEventListener("click", () => {
+      showDashboard(currentUser);
+    });
+
+    // باز کردن پنل عملیات برای یک دانش‌آموز خاص
+    function openStudentAction(student) {
+      selectedStudent = student;
+      studentsCard.classList.add("hidden");
+      studentActionCard.classList.remove("hidden");
+      targetStudentName.textContent = `${student.name} ${student.family}`;
+
+      const unread = unreadCountMap[student.id] || 0;
+      if (unread > 0) {
+        userMsgBadge.textContent = unread;
+        userMsgBadge.classList.remove("hidden");
+      } else {
+        userMsgBadge.classList.add("hidden");
+      }
+    }
+
+    document.getElementById("backFromActionBtn").addEventListener("click", () => {
+      studentActionCard.classList.add("hidden");
+      openStudentsBtn.click();
+    });
+
+    // باز کردن بخش چت
+    openChatBtn.addEventListener("click", async () => {
+      studentActionCard.classList.add("hidden");
+      chatCard.classList.remove("hidden");
+      chatTargetName.textContent = `پیام با ${selectedStudent.name} ${selectedStudent.family}`;
+      loadMessages();
+    });
+
+    async function loadMessages() {
+      chatMessages.innerHTML = "در حال بارگذاری پیام‌ها...";
+
+      // علامت‌گذاری به عنوان خوانده‌شده
+      await client
+        .from("messages")
+        .update({ is_read: true })
+        .eq("sender_id", selectedStudent.id)
+        .eq("receiver_id", currentUser.id);
+
+      // دریافت پیام‌های طرفین
+      const { data: msgs } = await client
+        .from("messages")
+        .select("*")
+        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.id})`)
+        .order("created_at", { ascending: true });
+
+      chatMessages.innerHTML = "";
+      if (!msgs || msgs.length === 0) {
+        chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center;'>هنوز پیامی وجود ندارد.</div>";
+        return;
+      }
+
+      msgs.forEach(m => {
+        const b = document.createElement("div");
+        b.className = "chat-bubble " + (m.sender_id === currentUser.id ? "chat-out" : "chat-in");
+        b.textContent = m.body;
+        chatMessages.appendChild(b);
+      });
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // ارسال پیام جدید
+    sendChatBtn.addEventListener("click", async () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
+      chatInput.value = "";
+
+      await client.from("messages").insert({
+        sender_id: currentUser.id,
+        receiver_id: selectedStudent.id,
+        body: text
+      });
+
+      loadMessages();
+    });
+
+    document.getElementById("backFromChatBtn").addEventListener("click", () => {
+      chatCard.classList.add("hidden");
+      fetchUnreadCounts().then(() => {
+        openStudentAction(selectedStudent);
+      });
+    });
+
+    // صفحه پیام‌های دولتی
+    openGovBtn.addEventListener("click", async () => {
+      dashCard.classList.add("hidden");
+      govCard.classList.remove("hidden");
+      govMessagesList.innerHTML = "در حال بارگذاری...";
+
+      // ثبت خوانده‌شدن
+      await client
+        .from("system_notifications")
+        .update({ is_read: true })
+        .eq("user_id", currentUser.id);
+
+      const { data: notes } = await client
+        .from("system_notifications")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      govMessagesList.innerHTML = "";
+      if (!notes || notes.length === 0) {
+        govMessagesList.innerHTML = "<div style='color:var(--muted); text-align:center;'>هیچ پیامی ثبت نشده است.</div>";
+        return;
+      }
+
+      notes.forEach(n => {
+        const item = document.createElement("div");
+        item.className = "list-item";
+        item.style.flexDirection = "column";
+        item.style.alignItems = "flex-start";
+        item.innerHTML = `<b style="color:var(--accent);">${n.title}</b><p style="margin:6px 0 0 0; font-size:13px;">${n.body}</p>`;
+        govMessagesList.appendChild(item);
+      });
+    });
+
+    document.getElementById("backFromGovBtn").addEventListener("click", () => {
+      showDashboard(currentUser);
+    });
+
+    // ورود به سامانه
+    async function login() {
       hideMsg();
       const code = (codeInput.value || "").trim();
 
@@ -245,9 +605,8 @@
 
         if (error) {
           console.error("Supabase Error:", error);
-          // تشخیص خطای محدودیت تعداد تلاش
           if (error.message && error.message.includes("RATE_LIMIT")) {
-             showMsg("تعداد تلاش‌های ناموفق زیاد بوده. لطفاً چند دقیقه صبر کنید.", "err");
+             showMsg("تعداد تلاش‌های ناموفق زیاد بوده. لطفاً کمی صبر کنید.", "err");
           } else {
              showMsg("خطا در ارتباط با سرور: " + error.message, "err");
           }
@@ -288,7 +647,7 @@
       showLogin();
     });
 
-    // بازیابی نشست در صورت رفرش
+    // بررسی نشست ذخیره‌شده
     (function checkSession() {
       try {
         const saved = localStorage.getItem("yaro_session");
@@ -303,4 +662,3 @@
   </script>
 </body>
 </html>
-
