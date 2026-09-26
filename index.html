@@ -607,54 +607,90 @@
     document.getElementById("backFromActionBtn").addEventListener("click", () => {
       openStudentsBtn.click();
     });
-
-    // انتقال وجه
+    // انتقال وجه واقعی با تابع امن transfer_yaro
     openTransferBtn.addEventListener("click", () => {
       hideAllCards();
       transferCard.classList.remove("hidden");
       transferTargetName.textContent = `واریز یارو به ${selectedStudent.name} ${selectedStudent.family}`;
       transferAmount.value = "";
+      transferReason.value = "";
       transferMsg.className = "msg hidden";
     });
 
     confirmTransferBtn.addEventListener("click", async () => {
       const amount = parseInt(transferAmount.value, 10);
+      const reason = (transferReason.value || "").trim();
+
       if (!amount || amount <= 0) {
-        transferMsg.textContent = "مبلغ معتبری وارد کنید.";
+        transferMsg.textContent = "لطفاً مبلغ معتبری وارد کنید.";
         transferMsg.className = "msg err";
         return;
       }
+
+      if (!reason || reason.length < 2) {
+        transferMsg.textContent = "لطفاً دلیل واریز را بنویسید (حداقل ۲ حرف).";
+        transferMsg.className = "msg err";
+        return;
+      }
+
       if (amount > (currentUser.balance || 0)) {
-        transferMsg.textContent = "موجودی شما کافی نیست.";
+        transferMsg.textContent = "موجودی کیف پول شما کافی نیست.";
         transferMsg.className = "msg err";
         return;
       }
 
       confirmTransferBtn.disabled = true;
-      transferMsg.textContent = "در حال انتقال یارو...";
+      transferMsg.textContent = "در حال پردازش تراکنش در بانک یارو...";
       transferMsg.className = "msg ok";
 
-      const { error } = await client.from("system_notifications").insert({
-        user_id: selectedStudent.id,
-        title: "واریز یارو",
-        body: `مبلغ ${amount} یارو از طرف ${currentUser.name} ${currentUser.family} به حساب شما واریز شد.`
-      });
+      try {
+        const { data, error } = await client.rpc("transfer_yaro", {
+          p_sender_id: currentUser.id,
+          p_receiver_id: selectedStudent.id,
+          p_amount: amount,
+          p_reason: reason
+        });
 
-      if (error) {
-        transferMsg.textContent = "خطا در انتقال: " + error.message;
+        if (error) {
+          transferMsg.textContent = "خطای سرور: " + error.message;
+          transferMsg.className = "msg err";
+          confirmTransferBtn.disabled = false;
+          return;
+        }
+
+        if (!data || !data.ok) {
+          let errText = "تراکنش انجام نشد.";
+          if (data && data.error === "INSUFFICIENT_BALANCE") errText = "موجودی شما کافی نیست.";
+          else if (data && data.error === "INVALID_REASON") errText = "دلیل واریز نامعتبر است.";
+          else if (data && data.error === "INVALID_AMOUNT") errText = "مبلغ نامعتبر است.";
+          else if (data && data.error) errText = "خطا: " + data.error;
+
+          transferMsg.textContent = errText;
+          transferMsg.className = "msg err";
+          confirmTransferBtn.disabled = false;
+          return;
+        }
+
+        // کسر موجودی و بروزرسانی حافظه لوکال
+        currentUser.balance = (currentUser.balance || 0) - amount;
+        balanceText.textContent = currentUser.balance;
+        localStorage.setItem("yaro_session", JSON.stringify(currentUser));
+
+        transferMsg.textContent = `مبلغ ${amount} یارو با موفقیت منتقل و در دفتر ثبت شد.`;
+        transferMsg.className = "msg ok";
+        confirmTransferBtn.disabled = false;
+
+        // به‌روزرسانی تعداد اعلان‌ها و برگشت
+        fetchUnreadCounts();
+        setTimeout(() => openStudentAction(selectedStudent), 1400);
+
+      } catch (err) {
+        transferMsg.textContent = "خطای غیرمنتظره: " + err.message;
         transferMsg.className = "msg err";
         confirmTransferBtn.disabled = false;
-        return;
       }
-
-      currentUser.balance = (currentUser.balance || 0) - amount;
-      balanceText.textContent = currentUser.balance;
-
-      transferMsg.textContent = `مبلغ ${amount} یارو با موفقیت منتقل شد.`;
-      transferMsg.className = "msg ok";
-      confirmTransferBtn.disabled = false;
-      setTimeout(() => openStudentAction(selectedStudent), 1400);
     });
+
 
     document.getElementById("backFromTransferBtn").addEventListener("click", () => {
       openStudentAction(selectedStudent);
