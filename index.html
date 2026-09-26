@@ -276,17 +276,24 @@
       <button class="btn-secondary" id="backFromActionBtn" style="width: 100%; margin-top: 14px;">بازگشت به فهرست</button>
     </div>
 
-    <!-- کارت انتقال یارو -->
+      <!-- کارت انتقال یارو -->
     <div class="card hidden" id="transferCard">
       <div class="brand" id="transferTargetName">واریز یارو</div>
-      <div class="sub">مبلغ مورد نظر را وارد کنید</div>
+      <div class="sub">مبلغ و دلیل واریز را وارد کنید</div>
+      
+      <label for="transferAmount" style="margin-top: 10px;">مبلغ واریزی (یارو):</label>
       <input id="transferAmount" type="number" placeholder="مثلاً: 50" style="text-align: center;" />
+      
+      <label for="transferReason" style="margin-top: 12px;">دلیل واریز (الزامی):</label>
+      <input id="transferReason" type="text" placeholder="مثلاً: خرید خودکار، ناهار..." autocomplete="off" />
+
       <div class="msg hidden" id="transferMsg"></div>
       <div class="btn-row">
         <button id="confirmTransferBtn">تأیید و انتقال</button>
         <button class="btn-secondary" id="backFromTransferBtn">انصراف</button>
       </div>
     </div>
+
 
     <!-- کارت ثبت شکایت -->
     <div class="card hidden" id="complaintCard">
