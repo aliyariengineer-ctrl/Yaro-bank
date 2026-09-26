@@ -325,7 +325,7 @@
 
   <script>
     const SUPABASE_URL = "https://ftdcgqcacweiqdttkhdq.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_-zN3T9tEQIyyoWSGkYtObw_D-vYMUHt";
+    const SUPABASE_KEY = "GAPGPTMASKTOKENjs670rir4zX0X";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -423,7 +423,65 @@
       loginCard.classList.remove("hidden");
       codeInput.value = "";
       hideMsg();
-      codeInput.focus();
+      
+      // اگر در حالت قفل نبودیم، دکمه و اینپوت فعال شوند
+      if (!checkActiveLockout()) {
+        codeInput.focus();
+      }
+    }
+
+    // سیستم قفل پلکانی: بار اول ۴ اشتباه = ۱ دقیقه، سپس هر ۲ اشتباه = ۵ دقیقه
+    function getFailedAttempts() {
+      return parseInt(localStorage.getItem("yaro_failed_attempts") || "0", 10);
+    }
+
+    function setFailedAttempts(count) {
+      localStorage.setItem("yaro_failed_attempts", count);
+    }
+
+    function getLockoutStage() {
+      return parseInt(localStorage.getItem("yaro_lockout_stage") || "0", 10);
+    }
+
+    function setLockoutStage(stage) {
+      localStorage.setItem("yaro_lockout_stage", stage);
+    }
+
+    function checkActiveLockout() {
+      const lockoutUntil = localStorage.getItem("yaro_lockout_until");
+      if (lockoutUntil) {
+        const remainMs = Number(lockoutUntil) - Date.now();
+        if (remainMs > 0) {
+          const remainSec = Math.ceil(remainMs / 1000);
+          startLockoutTimer(remainSec);
+          return true;
+        } else {
+          localStorage.removeItem("yaro_lockout_until");
+        }
+      }
+      return false;
+    }
+
+    function startLockoutTimer(seconds) {
+      setLoading(true);
+      let timer = seconds;
+
+      showMsg(`سامانه موقتاً مسدود است. لطفاً ${timer} ثانیه صبر کنید.`, "err");
+      loginBtn.textContent = `قفل (${timer} ثانیه)`;
+
+      const interval = setInterval(() => {
+        timer--;
+        if (timer <= 0) {
+          clearInterval(interval);
+          setLoading(false);
+          hideMsg();
+          localStorage.removeItem("yaro_lockout_until");
+          loginBtn.textContent = "ورود به حساب";
+        } else {
+          loginBtn.textContent = `قفل (${timer} ثانیه)`;
+          showMsg(`سامانه موقتاً مسدود است. لطفاً ${timer} ثانیه صبر کنید.`, "err");
+        }
+      }, 1000);
     }
 
     async function fetchUnreadCounts() {
@@ -469,7 +527,7 @@
       }
     }
 
-    // واکشی امن: فقط از public_students که فاقد login_code و balance است
+    // واکشی امن لیست دانش‌آموزان
     openStudentsBtn.addEventListener("click", async () => {
       hideAllCards();
       studentsCard.classList.remove("hidden");
@@ -541,7 +599,7 @@
       openStudentsBtn.click();
     });
 
-    // عملیات انتقال وجه
+    // انتقال وجه
     openTransferBtn.addEventListener("click", () => {
       hideAllCards();
       transferCard.classList.remove("hidden");
@@ -593,7 +651,7 @@
       openStudentAction(selectedStudent);
     });
 
-    // عملیات ثبت شکایت
+    // ثبت شکایت
     openComplaintBtn.addEventListener("click", () => {
       hideAllCards();
       complaintCard.classList.remove("hidden");
@@ -637,7 +695,7 @@
       openStudentAction(selectedStudent);
     });
 
-    // عملیات چت
+    // چت و پیام
     openChatBtn.addEventListener("click", async () => {
       hideAllCards();
       chatCard.classList.remove("hidden");
@@ -646,7 +704,7 @@
     });
 
     async function loadMessages() {
-      chatMessages.innerHTML = "در حال بارگذاری پیام‌ها...";
+      chatMessages.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری پیام‌ها...</div>";
 
       try {
         await client
@@ -655,11 +713,16 @@
           .eq("sender_id", selectedStudent.id)
           .eq("receiver_id", currentUser.id);
 
-        const { data: msgs } = await client
+        const { data: msgs, error } = await client
           .from("messages")
           .select("*")
           .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.id})`)
           .order("created_at", { ascending: true });
+
+        if (error) {
+          chatMessages.innerHTML = `<div class="msg err">خطا در بارگذاری پیام‌ها: ${error.message}</div>`;
+          return;
+        }
 
         if (!msgs || msgs.length === 0) {
           chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center; padding:20px;'>هنوز گفت‌وگویی صورت نگرفته است. اولین پیام را بفرستید!</div>";
@@ -682,15 +745,23 @@
     sendChatBtn.addEventListener("click", async () => {
       const text = chatInput.value.trim();
       if (!text) return;
-      chatInput.value = "";
 
-      await client.from("messages").insert({
+      sendChatBtn.disabled = true;
+
+      const { error } = await client.from("messages").insert({
         sender_id: currentUser.id,
         receiver_id: selectedStudent.id,
         body: text
       });
 
-      loadMessages();
+      sendChatBtn.disabled = false;
+
+      if (error) {
+        alert("خطا در ارسال پیام: " + error.message);
+      } else {
+        chatInput.value = "";
+        loadMessages();
+      }
     });
 
     document.getElementById("backFromChatBtn").addEventListener("click", () => {
@@ -699,11 +770,11 @@
       });
     });
 
-    // عملیات پیام‌های دولتی
+    // اعلان‌ها
     openGovBtn.addEventListener("click", async () => {
       hideAllCards();
       govCard.classList.remove("hidden");
-      govMessagesList.innerHTML = "در حال بارگذاری اعلان‌ها...";
+      govMessagesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری اعلان‌ها...</div>";
 
       try {
         await client
@@ -711,11 +782,16 @@
           .update({ is_read: true })
           .eq("user_id", currentUser.id);
 
-        const { data: notes } = await client
+        const { data: notes, error } = await client
           .from("system_notifications")
           .select("*")
           .eq("user_id", currentUser.id)
           .order("created_at", { ascending: false });
+
+        if (error) {
+          govMessagesList.innerHTML = `<div class="msg err">خطا: ${error.message}</div>`;
+          return;
+        }
 
         govMessagesList.innerHTML = "";
         if (!notes || notes.length === 0) {
@@ -740,13 +816,18 @@
       showDashboard(currentUser);
     });
 
-    // ورود
+    // تابع ورود اصلی
     async function login() {
       hideMsg();
+
+      if (checkActiveLockout()) {
+        return;
+      }
+
       const code = (codeInput.value || "").trim();
 
       if (code.length !== 5 || isNaN(code)) {
-        showMsg("کد ورود باید یک عدد ۵ رقمی باشد.", "err");
+        showMsg("کد ورود باید دقیقاً یک عدد ۵ رقمی باشد.", "err");
         return;
       }
 
@@ -757,13 +838,38 @@
 
         if (error) {
           showMsg("خطا در ورود: " + error.message, "err");
+          setLoading(false);
           return;
         }
 
         if (!data || data.length === 0) {
-          showMsg("کد ۵ رقمی اشتباه است.", "err");
+          let attempts = getFailedAttempts() + 1;
+          setFailedAttempts(attempts);
+
+          let stage = getLockoutStage();
+          let threshold = (stage === 0) ? 4 : 2;
+          let remain = threshold - attempts;
+
+          if (remain <= 0) {
+            let lockDuration = (stage === 0) ? 60 : 300;
+            const lockoutTime = Date.now() + (lockDuration * 1000);
+            localStorage.setItem("yaro_lockout_until", lockoutTime);
+
+            setFailedAttempts(0);
+            setLockoutStage(stage + 1);
+
+            startLockoutTimer(lockDuration);
+          } else {
+            showMsg(`کد ۵ رقمی نادرست است. (${remain} تلاش دیگر تا قفل سامانه)`, "err");
+            setLoading(false);
+          }
           return;
         }
+
+        // ورود موفق -> پاک‌کردن جریمه‌ها
+        localStorage.removeItem("yaro_failed_attempts");
+        localStorage.removeItem("yaro_lockout_stage");
+        localStorage.removeItem("yaro_lockout_until");
 
         const user = data[0];
         localStorage.setItem("yaro_session", JSON.stringify(user));
@@ -771,7 +877,6 @@
 
       } catch (err) {
         showMsg("خطای غیرمنتظره در برقراری ارتباط.", "err");
-      } finally {
         setLoading(false);
       }
     }
