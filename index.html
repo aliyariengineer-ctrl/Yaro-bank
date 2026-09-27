@@ -345,33 +345,39 @@
       <button class="btn-secondary" id="backFromLedgerBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
 
-    <!-- کارت مشاهده همه موجودی‌ها و افزایش/کاهش برای ادمین -->
+       <!-- کارت مشاهده همه موجودی‌ها برای ادمین -->
     <div class="card hidden" id="manageBalancesCard">
       <div class="brand">مدیریت موجودی کاربران</div>
-      <div class="sub">مشاهده موجودی همه و تغییر دستی</div>
+      <div class="sub">برای افزایش یا کاهش موجودی، روی نام کاربر بزنید:</div>
 
-      <div class="box-container" id="allUsersBalanceList" style="max-height: 240px; margin-bottom: 15px;">در حال بارگذاری...</div>
-
-      <!-- فرم اعمال تغییرات -->
-      <div style="background: #0b1426; border: 1px solid var(--border); border-radius: 12px; padding: 14px;">
-        <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
-          کاربر انتخاب‌شده: <b id="adjustSelectedUserName" style="color: var(--accent);">هیچ کاربری انتخاب نشده</b>
-        </div>
-        <input type="hidden" id="adjustSelectedUserId" value="" />
-        
-        <label for="adjustDeltaInput">مقدار تغییر موجودی (مثبت برای افزایش، منفی برای کسر):</label>
-        <input id="adjustDeltaInput" type="number" placeholder="مثلاً: 20 یا -15" style="margin-bottom: 10px; text-align: center;" />
-
-        <label for="adjustReasonInput">دلیل تغییر (الزامی):</label>
-        <input id="adjustReasonInput" type="text" placeholder="مثلاً: پاداش فعالیت، جریمه و..." autocomplete="off" />
-
-        <div class="msg hidden" id="adjustMsg"></div>
-
-        <button id="confirmAdjustBtn" style="width: 100%; margin-top: 12px; background: var(--ok);">ثبت و اعمال در حساب</button>
-      </div>
+      <div class="box-container" id="allUsersBalanceList" style="max-height: 380px;">در حال بارگذاری...</div>
 
       <button class="btn-secondary" id="backFromManageBalancesBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
+
+    <!-- پنجره پاپ‌آپ (Modal) تغییر موجودی با کلیک روی نام کاربر -->
+    <div id="adjustModal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px; box-sizing:border-box;">
+      <div style="background:#111b2e; border:1px solid var(--border); border-radius:16px; width:100%; max-width:400px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+        <div class="brand" id="modalUserName" style="font-size:17px; margin-bottom:4px;">نام کاربر</div>
+        <div id="modalUserCurrentBalance" style="color:var(--ok); font-size:14px; text-align:center; font-weight:bold; margin-bottom:16px;">موجودی فعلی: 0 یارو</div>
+        
+        <input type="hidden" id="modalTargetUserId" value="" />
+
+        <label for="modalDeltaInput">مقدار تغییر (مثبت برای افزایش، منفی برای کسر):</label>
+        <input id="modalDeltaInput" type="number" placeholder="مثلاً: 25 یا -10" style="text-align:center; margin-bottom:12px;" />
+
+        <label for="modalReasonInput">دلیل تغییر (الزامی):</label>
+        <input id="modalReasonInput" type="text" placeholder="مثلاً: پاداش فعالیت کلاسی..." autocomplete="off" style="margin-bottom:14px;" />
+
+        <div class="msg hidden" id="modalMsg"></div>
+
+        <div class="btn-row" style="margin-top:14px;">
+          <button id="modalConfirmBtn" type="button">ثبت و اعمال</button>
+          <button class="btn-secondary" id="modalCloseBtn" type="button">انصراف</button>
+        </div>
+      </div>
+    </div>
+
 
   </div>
 
