@@ -904,49 +904,78 @@
       openStudentAction(selectedStudent);
     });
 
-    // ثبت شکایت
+       // ثبت شکایت رسمی با عنوان و شرح پرونده
     openComplaintBtn.addEventListener("click", () => {
       hideAllCards();
       complaintCard.classList.remove("hidden");
       complaintTargetName.textContent = `ثبت شکایت علیه ${selectedStudent.name} ${selectedStudent.family}`;
+      complaintTitle.value = "";
       complaintText.value = "";
       complaintMsg.className = "msg hidden";
     });
 
     confirmComplaintBtn.addEventListener("click", async () => {
+      const title = complaintTitle.value.trim();
       const text = complaintText.value.trim();
-      if (!text) {
-        complaintMsg.textContent = "لطفاً توضیحات شکایت خود را بنویسید.";
+
+      if (!title || title.length < 2) {
+        complaintMsg.textContent = "لطفاً عنوان شکایت (علت اصلی) را بنویسید.";
+        complaintMsg.className = "msg err";
+        return;
+      }
+
+      if (!text || text.length < 5) {
+        complaintMsg.textContent = "لطفاً شرح کامل پرونده را بنویسید.";
         complaintMsg.className = "msg err";
         return;
       }
 
       confirmComplaintBtn.disabled = true;
-      complaintMsg.textContent = "در حال ثبت شکایت...";
+      complaintMsg.textContent = "در حال ارسال پرونده به پنل قاضی...";
       complaintMsg.className = "msg ok";
 
-      const { error } = await client.from("system_notifications").insert({
-        user_id: selectedStudent.id,
-        title: "اخطار و شکایت ثبت‌شده",
-        body: `شکایتی علیه شما با موضوع «${text}» توسط یکی از اعضا ثبت شده است.`
-      });
+      try {
+        // ۱. تشکیل پرونده در court_cases برای قاضی
+        const { error: caseError } = await client.from("court_cases").insert({
+          complainant_id: currentUser.id,
+          defendant_id: selectedStudent.id,
+          title: title,
+          description: text,
+          status: "pending_judge"
+        });
 
-      if (error) {
-        complaintMsg.textContent = "خطا در ثبت: " + error.message;
+        if (caseError) throw caseError;
+
+        // ۲. ارسال پیام دولتی به متهم: فلانی از شما به دلیل (...) شکایت کرد
+        await client.from("system_notifications").insert({
+          user_id: selectedStudent.id,
+          title: "ابلاغیه قضایی شکایت",
+          body: `${currentUser.name} ${currentUser.family} از شما به دلیل «${title}» شکایت کرد.`
+        });
+
+        // ۳. ارسال پیام دولتی به شاکی: شکایت شما با موفقیت ثبت شد
+        await client.from("system_notifications").insert({
+          user_id: currentUser.id,
+          title: "رسید ثبت شکایت",
+          body: `شکایت شما با عنوان «${title}» با موفقیت ثبت شد و پرونده به پنل قاضی ارجاع گردید.`
+        });
+
+        complaintMsg.textContent = "پرونده تشکیل و با موفقیت به قاضی ارسال شد.";
+        complaintMsg.className = "msg ok";
+        confirmComplaintBtn.disabled = false;
+
+        setTimeout(() => openStudentAction(selectedStudent), 1400);
+      } catch (err) {
+        complaintMsg.textContent = "خطا در ثبت شکایت: " + err.message;
         complaintMsg.className = "msg err";
         confirmComplaintBtn.disabled = false;
-        return;
       }
-
-      complaintMsg.textContent = "شکایت با موفقیت در سیستم ثبت گردید.";
-      complaintMsg.className = "msg ok";
-      confirmComplaintBtn.disabled = false;
-      setTimeout(() => openStudentAction(selectedStudent), 1400);
     });
 
     document.getElementById("backFromComplaintBtn").addEventListener("click", () => {
       openStudentAction(selectedStudent);
     });
+
 
     // چت و پیام
     openChatBtn.addEventListener("click", async () => {
