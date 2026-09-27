@@ -305,16 +305,30 @@
     </div>
 
 
-    <!-- کارت ثبت شکایت -->
+       <!-- کارت ثبت شکایت با عنوان و شرح کامل -->
     <div class="card hidden" id="complaintCard">
       <div class="brand" id="complaintTargetName">ثبت شکایت رسمی</div>
-      <div class="sub">علت یا متن گزارش خود را بنویسید</div>
-      <textarea id="complaintText" rows="3" placeholder="شرح تخلف یا شکایت..."></textarea>
+      <div class="sub">عنوان و شرح کامل پرونده را برای بررسی قاضی وارد کنید</div>
+      
+      <label for="complaintTitle">عنوان شکایت (علت اصلی):</label>
+      <input id="complaintTitle" type="text" placeholder="مثلاً: بدهی یارو، توهین، تقلب..." autocomplete="off" style="margin-bottom: 12px;" />
+
+      <label for="complaintText">شرح کامل ماجرا و دلایل:</label>
+      <textarea id="complaintText" rows="4" placeholder="کل ماجرا را با جزئیات کامل شرح دهید..."></textarea>
+      
       <div class="msg hidden" id="complaintMsg"></div>
       <div class="btn-row">
-        <button id="confirmComplaintBtn">ارسال شکایت</button>
+        <button id="confirmComplaintBtn">تأیید و ثبت شکایت</button>
         <button class="btn-secondary" id="backFromComplaintBtn">انصراف</button>
       </div>
+    </div>
+
+    <!-- کارت اختصاصی دادگاه (برای قاضی و رئیس قوه قضاییه) -->
+    <div class="card hidden" id="courtCard">
+      <div class="brand" id="courtCardTitle">پرونده‌های قضایی</div>
+      <div class="sub" id="courtCardSub">لیست پرونده‌های در انتظار بررسی</div>
+      <div class="box-container" id="courtCasesList" style="max-height: 420px;">در حال دریافت پرونده‌ها...</div>
+      <button class="btn-secondary" id="backFromCourtBtn" style="width: 100%; margin-top: 14px;">بازگشت به داشبورد</button>
     </div>
 
     <!-- صفحه چت پیام خصوصی -->
