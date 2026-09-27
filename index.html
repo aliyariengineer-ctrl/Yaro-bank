@@ -609,7 +609,7 @@
       roleText.textContent = `سمت / نقش: ${user.role || "دانش‌آموز"}`;
       balanceText.textContent = user.balance ?? 0;
 
-      // نمایش دکمه‌های ادمین فقط در صورتی که کاربر ادمین باشد
+         // نمایش دکمه‌های ادمین فقط در صورتی که کاربر ادمین باشد
       if (user.role === "admin") {
         openLedgerBtn.classList.remove("hidden");
         openManageBalancesBtn.classList.remove("hidden");
@@ -619,8 +619,18 @@
         openManageBalancesBtn.classList.add("hidden");
       }
 
-         fetchUnreadCounts();
+      // نمایش دکمه دادگاه برای قاضی (امیررضا) یا رئیس قوه قضاییه (پارسا)
+      if (user.role === "judge" || user.role === "chief_judge") {
+        openCourtBtn.classList.remove("hidden");
+        courtBtnText.textContent = user.role === "judge" ? "⚖️ میز قضاوت و پرونده‌ها" : "🏛️ دیوان عالی (تأیید احکام)";
+        fetchCourtBadge();
+      } else {
+        openCourtBtn.classList.add("hidden");
+      }
+
+      fetchUnreadCounts();
       setupRealtimeSubscriptions(user.id);
+
     }
 
 
