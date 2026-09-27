@@ -411,7 +411,7 @@
       }
     }
 
-       function setupRealtimeSubscriptions(userId) {
+          function setupRealtimeSubscriptions(userId) {
       if (realtimeChannel) {
         client.removeChannel(realtimeChannel);
         realtimeChannel = null;
@@ -426,8 +426,9 @@
           { event: "*", schema: "public", table: "users" },
           (payload) => {
             if (payload.new && Number(payload.new.id) === uid) {
-              currentUser.balance = payload.new.balance;
-              balanceText.textContent = payload.new.balance;
+              const newBalance = Number(payload.new.balance ?? 0);
+              currentUser.balance = newBalance;
+              balanceText.textContent = newBalance;
               localStorage.setItem("yaro_session", JSON.stringify(currentUser));
             }
           }
