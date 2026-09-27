@@ -387,9 +387,103 @@
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentUser = null;
+     let currentUser = null;
     let selectedStudent = null;
     let unreadCountMap = {};
+    let realtimeChannel = null;
+
+    async function refreshCurrentUserBalance() {
+      if (!currentUser) return;
+      try {
+        const { data, error } = await client
+          .from("users")
+          .select("balance")
+          .eq("id", currentUser.id)
+          .single();
+
+        if (!error && data) {
+          currentUser.balance = data.balance ?? 0;
+          balanceText.textContent = currentUser.balance;
+          localStorage.setItem("yaro_session", JSON.stringify(currentUser));
+        }
+      } catch (e) {
+        console.error("خطا در بروزرسانی موجودی:", e);
+      }
+    }
+
+    function setupRealtimeSubscriptions(userId) {
+      if (realtimeChannel) {
+        client.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
+
+      realtimeChannel = client
+        .channel(`yaro_live_${userId}`)
+        // ۱. تغییر زنده موجودی در جدول کاربران
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "users",
+            filter: `id=eq.${userId}`
+          },
+          (payload) => {
+            if (payload.new && payload.new.balance !== undefined) {
+              currentUser.balance = payload.new.balance;
+              balanceText.textContent = payload.new.balance;
+              localStorage.setItem("yaro_session", JSON.stringify(currentUser));
+            }
+          }
+        )
+        // ۲. دریافت یاروی جدید از سایرین
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "wallet_transfers",
+            filter: `receiver_id=eq.${userId}`
+          },
+          () => {
+            refreshCurrentUserBalance();
+            if (currentUser && currentUser.role === "admin") {
+              fetchLedgerBadge();
+            }
+          }
+        )
+        // ۳. دریافت پیام شخصی جدید
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `receiver_id=eq.${userId}`
+          },
+          () => {
+            fetchUnreadCounts();
+            if (selectedStudent && !chatCard.classList.contains("hidden")) {
+              loadMessages();
+            }
+          }
+        )
+        // ۴. دریافت اعلان‌های دولتی و اخطاریه جدید
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "system_notifications",
+            filter: `user_id=eq.${userId}`
+          },
+          () => {
+            fetchUnreadCounts();
+          }
+        )
+        .subscribe();
+    }
+
 
     const loginCard = document.getElementById("loginCard");
     const dashCard = document.getElementById("dashCard");
