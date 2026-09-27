@@ -1386,6 +1386,189 @@
       showDashboard(currentUser);
     });
 
+    
+    // --- توابع و رویدادهای کارتابل دادگاه و قضایی ---
+    async function fetchCourtBadge() {
+      if (!currentUser) return;
+      let targetStatus = null;
+      if (currentUser.role === "judge") targetStatus = "pending_judge";
+      else if (currentUser.role === "chief_judge") targetStatus = "pending_chief";
+      else return;
+
+      try {
+        const { count, error } = await client
+          .from("court_cases")
+          .select("id", { count: "exact", head: true })
+          .eq("status", targetStatus);
+
+        const badgeEl = document.getElementById("courtBadge");
+        if (badgeEl) {
+          if (!error && count && count > 0) {
+            badgeEl.textContent = count > 99 ? "+99" : count;
+            badgeEl.classList.remove("hidden");
+          } else {
+            badgeEl.classList.add("hidden");
+          }
+        }
+      } catch (e) {
+        console.error("خطا در نشانگر دادگاه:", e);
+      }
+    }
+
+    const openCourtBtn = document.getElementById("openCourtBtn");
+    if (openCourtBtn) {
+      openCourtBtn.addEventListener("click", () => {
+        hideAllCards();
+        const courtCard = document.getElementById("courtCard");
+        if (courtCard) courtCard.classList.remove("hidden");
+        loadCourtCases();
+      });
+    }
+
+    const backFromCourtBtn = document.getElementById("backFromCourtBtn");
+    if (backFromCourtBtn) {
+      backFromCourtBtn.addEventListener("click", () => {
+        showDashboard(currentUser);
+      });
+    }
+
+    async function loadCourtCases() {
+      const courtCasesList = document.getElementById("courtCasesList");
+      if (!courtCasesList) return;
+
+      courtCasesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری پرونده‌ها...</div>";
+      const filterStatus = currentUser.role === "judge" ? "pending_judge" : "pending_chief";
+
+      try {
+        const { data: cases, error } = await client
+          .from("court_cases")
+          .select(`
+            *,
+            complainant:complainant_id(name, family),
+            defendant:defendant_id(name, family)
+          `)
+          .eq("status", filterStatus)
+          .order("id", { ascending: false });
+
+        if (error) {
+          courtCasesList.innerHTML = `<div class="msg err">خطا در دریافت پرونده‌ها: ${error.message}</div>`;
+          return;
+        }
+
+        if (!cases || cases.length === 0) {
+          courtCasesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:20px;'>در حال حاضر هیچ پرونده‌ای در این کارتابل وجود ندارد.</div>";
+          return;
+        }
+
+        courtCasesList.innerHTML = "";
+        cases.forEach(c => {
+          const item = document.createElement("div");
+          item.className = "list-item";
+          item.style.flexDirection = "column";
+          item.style.alignItems = "stretch";
+          item.style.cursor = "default";
+
+          const compName = c.complainant ? `${c.complainant.name} ${c.complainant.family}` : "نامشخص";
+          const defName = c.defendant ? `${c.defendant.name} ${c.defendant.family}` : "نامشخص";
+
+          let actionHtml = "";
+          if (currentUser.role === "judge") {
+            actionHtml = `
+              <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+                <label style="font-size:12px;">تعیین جریمه کسر از متهم (یارو):</label>
+                <input type="number" id="fineInput_${c.id}" min="0" value="0" style="text-align:center; margin-bottom:8px;" placeholder="0 یا مبلغ جریمه" />
+                <button onclick="submitJudgeVerdict(${c.id})" style="width:100%; background:var(--accent);">صدور و ارسال حکم به رئیس قوه</button>
+              </div>
+            `;
+          } else if (currentUser.role === "chief_judge") {
+            actionHtml = `
+              <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+                <div style="font-size:13px; color:var(--badge-orange); margin-bottom:10px;">
+                  <b>حکم قاضی:</b> جریمه به میزان <b>${c.fine_amount} یارو</b>
+                </div>
+                <div class="btn-row">
+                  <button onclick="decideChief(${c.id}, 'approve')" style="background:var(--ok);">تأیید حکم و اعمال جریمه</button>
+                  <button onclick="decideChief(${c.id}, 'reject')" class="btn-secondary" style="background:var(--danger); color:#fff;">لغو حکم</button>
+                </div>
+              </div>
+            `;
+          }
+
+          item.innerHTML = `
+            <div>
+              <div style="font-size:15px; font-weight:bold; color:var(--accent);">عنوان: ${c.title}</div>
+              <div style="font-size:12px; color:var(--muted); margin:4px 0;">
+                شاکی: <b>${compName}</b> | متهم: <b style="color:var(--danger);">${defName}</b>
+              </div>
+              <div style="background:#070d18; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:13px; margin-top:8px; line-height:1.6; white-space:pre-wrap;">${c.description}</div>
+            </div>
+            ${actionHtml}
+          `;
+          courtCasesList.appendChild(item);
+        });
+
+      } catch (err) {
+        courtCasesList.innerHTML = `<div class="msg err">خطای ارتباطی: ${err.message}</div>`;
+      }
+    }
+
+    async function submitJudgeVerdict(caseId) {
+      const inputEl = document.getElementById(`fineInput_${caseId}`);
+      const fine = parseInt(inputEl.value, 10);
+      if (isNaN(fine) || fine < 0) {
+        alert("لطفاً یک عدد معتبر (۰ یا بیشتر) وارد کنید.");
+        return;
+      }
+
+      if (!confirm(`آیا از صدور جریمه ${fine} یارو و ارجاع به رئیس قوه اطمینان دارید؟`)) return;
+
+      try {
+        const { data, error } = await client.rpc("judge_issue_verdict", {
+          p_case_id: caseId,
+          p_judge_id: currentUser.id,
+          p_fine_amount: fine,
+          p_note: "حکم قاضی صادر شد"
+        });
+
+        if (error || !data || !data.success) {
+          alert("خطا در صدور حکم: " + (error?.message || data?.message));
+          return;
+        }
+
+        alert(data.message);
+        loadCourtCases();
+        fetchCourtBadge();
+      } catch (e) {
+        alert("خطا: " + e.message);
+      }
+    }
+
+    async function decideChief(caseId, decision) {
+      const msg = decision === "approve" 
+        ? "آیا از تأیید حکم، کسر جریمه از متهم و واریز به شاکی اطمینان دارید؟" 
+        : "آیا از لغو این حکم اطمینان دارید؟";
+      if (!confirm(msg)) return;
+
+      try {
+        const { data, error } = await client.rpc("chief_justice_decide", {
+          p_case_id: caseId,
+          p_chief_id: currentUser.id,
+          p_decision: decision
+        });
+
+        if (error || !data || !data.success) {
+          alert("خطا در تصمیم‌گیری: " + (error?.message || data?.message));
+          return;
+        }
+
+        alert(data.message);
+        loadCourtCases();
+        fetchCourtBadge();
+      } catch (e) {
+        alert("خطا: " + e.message);
+      }
+    }
+
 
     (function checkSession() {
       try {
