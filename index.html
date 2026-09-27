@@ -1101,15 +1101,23 @@
       showDashboard(currentUser);
     });
 
-    // باز کردن پنل مشاهده موجودی کل افراد و تغییر دستی
+       function openAdjustModal(user) {
+      modalTargetUserId.value = user.id;
+      modalUserName.textContent = `${user.name} ${user.family}`;
+      modalUserCurrentBalance.textContent = `موجودی فعلی: ${user.balance} یارو`;
+      modalDeltaInput.value = "";
+      modalReasonInput.value = "";
+      modalMsg.className = "msg hidden";
+      adjustModal.classList.remove("hidden");
+    }
+
+    modalCloseBtn.addEventListener("click", () => {
+      adjustModal.classList.add("hidden");
+    });
+
     openManageBalancesBtn.addEventListener("click", () => {
       hideAllCards();
       manageBalancesCard.classList.remove("hidden");
-      adjustSelectedUserId.value = "";
-      adjustSelectedUserName.textContent = "هیچ کاربری انتخاب نشده";
-      adjustDeltaInput.value = "";
-      adjustReasonInput.value = "";
-      adjustMsg.className = "msg hidden";
       loadAllUsersBalances();
     });
 
@@ -1125,57 +1133,53 @@
           return;
         }
 
+        if (!data || data.length === 0) {
+          allUsersBalanceList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>کاربری یافت نشد.</div>";
+          return;
+        }
+
         allUsersBalanceList.innerHTML = "";
         data.forEach(u => {
           const row = document.createElement("div");
           row.className = "list-item";
+          row.style.cursor = "pointer";
           row.innerHTML = `
             <div>
-              <b style="font-size:14px;">${u.name} ${u.family}</b>
-              <div style="font-size:11px; color:var(--muted);">نقش: ${u.role || "دانش‌آموز"} | کد: ${u.login_code || "-"}</div>
+              <b style="font-size:14px; display:block;">${u.name} ${u.family}</b>
+              <span style="font-size:11px; color:var(--muted);">نقش: ${u.role || "دانش‌آموز"} | کد: ${u.login_code || "-"}</span>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-weight:bold; color:var(--ok); font-size:14px;">${u.balance} یارو</span>
-              <button type="button" style="padding:6px 10px; font-size:12px; background:var(--accent); border-radius:6px;">انتخاب</button>
+            <div style="text-align:left;">
+              <span style="font-weight:bold; color:var(--ok); font-size:15px;">${u.balance} یارو</span>
+              <div style="font-size:11px; color:var(--accent); margin-top:3px;">کلیک برای تغییر ⬅️</div>
             </div>
           `;
-          row.querySelector("button").addEventListener("click", () => {
-            adjustSelectedUserId.value = u.id;
-            adjustSelectedUserName.textContent = `${u.name} ${u.family} (موجودی فعلی: ${u.balance} یارو)`;
-            adjustMsg.className = "msg hidden";
-          });
+          row.addEventListener("click", () => openAdjustModal(u));
           allUsersBalanceList.appendChild(row);
         });
       } catch (err) {
-        allUsersBalanceList.innerHTML = `<div class="msg err">خطا در دریافت موجودی‌ها</div>`;
+        allUsersBalanceList.innerHTML = `<div class="msg err">خطا در برقراری ارتباط</div>`;
       }
     }
 
-    // ارسال تغییر موجودی دستی ادمین
-    confirmAdjustBtn.addEventListener("click", async () => {
-      const targetId = adjustSelectedUserId.value;
-      const delta = parseInt(adjustDeltaInput.value, 10);
-      const reason = adjustReasonInput.value.trim();
+    modalConfirmBtn.addEventListener("click", async () => {
+      const targetId = modalTargetUserId.value;
+      const delta = parseInt(modalDeltaInput.value, 10);
+      const reason = modalReasonInput.value.trim();
 
-      if (!targetId) {
-        adjustMsg.textContent = "لطفاً ابتدا از فهرست بالا یک کاربر را انتخاب کنید.";
-        adjustMsg.className = "msg err";
-        return;
-      }
       if (isNaN(delta) || delta === 0) {
-        adjustMsg.textContent = "لطفاً یک مقدار معتبر (مثبت یا منفی) وارد کنید.";
-        adjustMsg.className = "msg err";
+        modalMsg.textContent = "لطفاً یک مقدار عددی معتبر وارد کنید.";
+        modalMsg.className = "msg err";
         return;
       }
       if (!reason || reason.length < 2) {
-        adjustMsg.textContent = "وارد کردن دلیل تغییر الزامی است.";
-        adjustMsg.className = "msg err";
+        modalMsg.textContent = "وارد کردن دلیل الزامی است.";
+        modalMsg.className = "msg err";
         return;
       }
 
-      confirmAdjustBtn.disabled = true;
-      adjustMsg.textContent = "در حال اعمال تغییر در دیتابیس...";
-      adjustMsg.className = "msg ok";
+      modalConfirmBtn.disabled = true;
+      modalMsg.textContent = "در حال ثبت تغییرات...";
+      modalMsg.className = "msg ok";
 
       try {
         const { data, error } = await client.rpc("admin_adjust_balance_yaro", {
@@ -1186,29 +1190,32 @@
         });
 
         if (error || !data || !data.ok) {
-          adjustMsg.textContent = "خطا در عملیات: " + (error?.message || data?.error || "ناشناخته");
-          adjustMsg.className = "msg err";
-          confirmAdjustBtn.disabled = false;
+          modalMsg.textContent = "خطا: " + (error?.message || data?.error || "عملیات ناموفق بود");
+          modalMsg.className = "msg err";
+          modalConfirmBtn.disabled = false;
           return;
         }
 
-        adjustMsg.textContent = "موجودی با موفقیت اصلاح شد و پیام برای کاربر ارسال گردید.";
-        adjustMsg.className = "msg ok";
-        confirmAdjustBtn.disabled = false;
-        adjustDeltaInput.value = "";
-        adjustReasonInput.value = "";
+        modalMsg.textContent = "تغییر موجودی با موفقیت اعمال شد.";
+        modalMsg.className = "msg ok";
 
-        loadAllUsersBalances();
+        setTimeout(() => {
+          adjustModal.classList.add("hidden");
+          modalConfirmBtn.disabled = false;
+          loadAllUsersBalances();
+        }, 700);
+
       } catch (err) {
-        adjustMsg.textContent = "خطای سرور: " + err.message;
-        adjustMsg.className = "msg err";
-        confirmAdjustBtn.disabled = false;
+        modalMsg.textContent = "خطای ارتباط: " + err.message;
+        modalMsg.className = "msg err";
+        modalConfirmBtn.disabled = false;
       }
     });
 
     document.getElementById("backFromManageBalancesBtn").addEventListener("click", () => {
       showDashboard(currentUser);
     });
+
 
     (function checkSession() {
       try {
