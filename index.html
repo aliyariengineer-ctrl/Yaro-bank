@@ -1117,10 +1117,15 @@
       if (e.key === "Enter") login();
     });
 
-    logoutBtn.addEventListener("click", () => {
+        logoutBtn.addEventListener("click", () => {
+      if (realtimeChannel) {
+        client.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
       localStorage.removeItem("yaro_session");
       showLogin();
     });
+
 
     // چک کردن نشان‌گر قرمز تراکنش‌های جدید دفتر کل
     async function fetchLedgerBadge() {
