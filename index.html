@@ -477,7 +477,7 @@
             }
           }
         )
-        .on(
+              .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "system_notifications" },
           (payload) => {
@@ -486,9 +486,20 @@
             }
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "court_cases" },
+          () => {
+            fetchCourtBadge();
+            if (currentUser && !courtCard.classList.contains("hidden")) {
+              loadCourtCases();
+            }
+          }
+        )
         .subscribe((status) => {
           console.log("Realtime status:", status);
         });
+
     }
 
 
