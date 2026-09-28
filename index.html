@@ -407,21 +407,22 @@
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-     let currentUser = null;
+    let currentUser = null;
+    let currentToken = null;
     let selectedStudent = null;
     let unreadCountMap = {};
     let realtimeChannel = null;
 
-    async function refreshCurrentUserBalance() {
-      if (!currentUser) return;
-      try {
-        const { data, error } = await client
-          .from("users")
-          .select("balance")
-          .eq("id", currentUser.id)
-          .single();
+    // ============ توابع امنیتی پایه ============
 
-        if (!error && data) {
+    async function refreshCurrentUserBalance() {
+      if (!currentUser || !currentToken) return;
+      try {
+        const { data, error } = await client.rpc("get_my_balance", {
+          p_token: currentToken
+        });
+
+        if (!error && data && data.ok) {
           currentUser.balance = data.balance ?? 0;
           balanceText.textContent = currentUser.balance;
           localStorage.setItem("yaro_session", JSON.stringify(currentUser));
@@ -431,7 +432,7 @@
       }
     }
 
-          function setupRealtimeSubscriptions(userId) {
+    function setupRealtimeSubscriptions(userId) {
       if (realtimeChannel) {
         client.removeChannel(realtimeChannel);
         realtimeChannel = null;
@@ -441,18 +442,6 @@
 
       realtimeChannel = client
         .channel(`room_user_${uid}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "users" },
-          (payload) => {
-            if (payload.new && Number(payload.new.id) === uid) {
-              const newBalance = Number(payload.new.balance ?? 0);
-              currentUser.balance = newBalance;
-              balanceText.textContent = newBalance;
-              localStorage.setItem("yaro_session", JSON.stringify(currentUser));
-            }
-          }
-        )
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "wallet_transfers" },
@@ -477,7 +466,7 @@
             }
           }
         )
-              .on(
+        .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "system_notifications" },
           (payload) => {
@@ -499,11 +488,9 @@
         .subscribe((status) => {
           console.log("Realtime status:", status);
         });
-
     }
 
-
-
+    // ============ المان‌های DOM ============
     const loginCard = document.getElementById("loginCard");
     const dashCard = document.getElementById("dashCard");
     const studentsCard = document.getElementById("studentsCard");
@@ -513,14 +500,14 @@
     const chatCard = document.getElementById("chatCard");
     const govCard = document.getElementById("govCard");
 
-        const ledgerCard = document.getElementById("ledgerCard");
+    const ledgerCard = document.getElementById("ledgerCard");
     const manageBalancesCard = document.getElementById("manageBalancesCard");
     const openLedgerBtn = document.getElementById("openLedgerBtn");
     const openManageBalancesBtn = document.getElementById("openManageBalancesBtn");
     const ledgerBadge = document.getElementById("ledgerBadge");
     const ledgerList = document.getElementById("ledgerList");
     const allUsersBalanceList = document.getElementById("allUsersBalanceList");
-       const adjustModal = document.getElementById("adjustModal");
+    const adjustModal = document.getElementById("adjustModal");
     const modalUserName = document.getElementById("modalUserName");
     const modalUserCurrentBalance = document.getElementById("modalUserCurrentBalance");
     const modalTargetUserId = document.getElementById("modalTargetUserId");
@@ -529,8 +516,6 @@
     const modalMsg = document.getElementById("modalMsg");
     const modalConfirmBtn = document.getElementById("modalConfirmBtn");
     const modalCloseBtn = document.getElementById("modalCloseBtn");
-
-
 
     const codeInput = document.getElementById("codeInput");
     const loginBtn = document.getElementById("loginBtn");
@@ -549,15 +534,14 @@
     const targetStudentName = document.getElementById("targetStudentName");
     const userMsgBadge = document.getElementById("userMsgBadge");
 
-       const openTransferBtn = document.getElementById("openTransferBtn");
+    const openTransferBtn = document.getElementById("openTransferBtn");
     const transferTargetName = document.getElementById("transferTargetName");
     const transferAmount = document.getElementById("transferAmount");
     const transferReason = document.getElementById("transferReason");
     const confirmTransferBtn = document.getElementById("confirmTransferBtn");
     const transferMsg = document.getElementById("transferMsg");
 
-
-     const openComplaintBtn = document.getElementById("openComplaintBtn");
+    const openComplaintBtn = document.getElementById("openComplaintBtn");
     const complaintTargetName = document.getElementById("complaintTargetName");
     const complaintTitle = document.getElementById("complaintTitle");
     const complaintText = document.getElementById("complaintText");
@@ -571,13 +555,13 @@
     const courtCasesList = document.getElementById("courtCasesList");
     const backFromCourtBtn = document.getElementById("backFromCourtBtn");
 
-
     const openChatBtn = document.getElementById("openChatBtn");
     const chatTargetName = document.getElementById("chatTargetName");
     const chatMessages = document.getElementById("chatMessages");
     const chatInput = document.getElementById("chatInput");
     const sendChatBtn = document.getElementById("sendChatBtn");
 
+    // ============ توابع کمکی ============
     function showMsg(text, type) {
       loginMsg.textContent = text;
       loginMsg.className = "msg " + type;
@@ -595,7 +579,7 @@
       loginBtn.textContent = isLoading ? "در حال بررسی..." : "ورود به حساب";
     }
 
-            function hideAllCards() {
+    function hideAllCards() {
       loginCard.classList.add("hidden");
       dashCard.classList.add("hidden");
       studentsCard.classList.add("hidden");
@@ -609,10 +593,11 @@
       courtCard.classList.add("hidden");
     }
 
-
-
-     function showDashboard(user) {
+    function showDashboard(user) {
       currentUser = user;
+      if (!currentToken) {
+        currentToken = localStorage.getItem("yaro_token");
+      }
       hideAllCards();
       dashCard.classList.remove("hidden");
 
@@ -620,7 +605,6 @@
       roleText.textContent = `سمت / نقش: ${user.role || "دانش‌آموز"}`;
       balanceText.textContent = user.balance ?? 0;
 
-         // نمایش دکمه‌های ادمین فقط در صورتی که کاربر ادمین باشد
       if (user.role === "admin") {
         openLedgerBtn.classList.remove("hidden");
         openManageBalancesBtn.classList.remove("hidden");
@@ -630,7 +614,6 @@
         openManageBalancesBtn.classList.add("hidden");
       }
 
-      // نمایش دکمه دادگاه برای قاضی (امیررضا) یا رئیس قوه قضاییه (پارسا)
       if (user.role === "judge" || user.role === "chief_judge") {
         openCourtBtn.classList.remove("hidden");
         courtBtnText.textContent = user.role === "judge" ? "⚖️ میز قضاوت و پرونده‌ها" : "🏛️ دیوان عالی (تأیید احکام)";
@@ -641,24 +624,23 @@
 
       fetchUnreadCounts();
       setupRealtimeSubscriptions(user.id);
-
     }
-
 
     function showLogin() {
       currentUser = null;
+      currentToken = null;
+      localStorage.removeItem("yaro_token");
       hideAllCards();
       loginCard.classList.remove("hidden");
       codeInput.value = "";
       hideMsg();
-      
-      // اگر در حالت قفل نبودیم، دکمه و اینپوت فعال شوند
+
       if (!checkActiveLockout()) {
         codeInput.focus();
       }
     }
 
-    // سیستم قفل پلکانی: بار اول ۴ اشتباه = ۱ دقیقه، سپس هر ۲ اشتباه = ۵ دقیقه
+    // ============ سیستم قفل ============
     function getFailedAttempts() {
       return parseInt(localStorage.getItem("yaro_failed_attempts") || "0", 10);
     }
@@ -712,40 +694,36 @@
       }, 1000);
     }
 
+    // ============ پیام‌های خوانده‌نشده ============
     async function fetchUnreadCounts() {
-      if (!currentUser) return;
+      if (!currentUser || !currentToken) return;
       try {
-        const { data: messages } = await client
-          .from("messages")
-          .select("sender_id")
-          .eq("receiver_id", currentUser.id)
-          .eq("is_read", false);
+        const { data, error } = await client.rpc("get_my_unread_counts", {
+          p_token: currentToken
+        });
+
+        if (error || !data || !data.ok) return;
+
+        const { data: msgData } = await client.rpc("get_my_unread_breakdown", {
+          p_token: currentToken
+        });
 
         unreadCountMap = {};
-        let totalUnread = 0;
-
-        if (messages) {
-          messages.forEach(m => {
-            unreadCountMap[m.sender_id] = (unreadCountMap[m.sender_id] || 0) + 1;
-            totalUnread++;
+        if (msgData && msgData.ok && msgData.breakdown) {
+          msgData.breakdown.forEach(item => {
+            unreadCountMap[item.sender_id] = item.count;
           });
         }
 
-        if (totalUnread > 0) {
-          totalMsgBadge.textContent = totalUnread;
+        if (data.msg > 0) {
+          totalMsgBadge.textContent = data.msg;
           totalMsgBadge.classList.remove("hidden");
         } else {
           totalMsgBadge.classList.add("hidden");
         }
 
-        const { data: govMsgs } = await client
-          .from("system_notifications")
-          .select("id")
-          .eq("user_id", currentUser.id)
-          .eq("is_read", false);
-
-        if (govMsgs && govMsgs.length > 0) {
-          govMsgBadge.textContent = govMsgs.length;
+        if (data.gov > 0) {
+          govMsgBadge.textContent = data.gov;
           govMsgBadge.classList.remove("hidden");
         } else {
           govMsgBadge.classList.add("hidden");
@@ -755,25 +733,25 @@
       }
     }
 
-    // واکشی امن لیست دانش‌آموزان
+    // ============ فهرست دانش‌آموزان ============
     openStudentsBtn.addEventListener("click", async () => {
       hideAllCards();
       studentsCard.classList.remove("hidden");
       studentsList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری لیست دانش‌آموزان...</div>";
 
       try {
-        const { data: users, error } = await client
-          .from("public_students")
-          .select("id, name, family, role")
-          .neq("id", currentUser.id)
-          .order("id", { ascending: true });
+        const { data, error } = await client.rpc("list_students", {
+          p_token: currentToken
+        });
 
-        if (error) {
-          studentsList.innerHTML = `<div class="msg err">خطا در بارگذاری فهرست: ${error.message}</div>`;
+        if (error || !data || !data.ok) {
+          studentsList.innerHTML = `<div class="msg err">خطا در بارگذاری فهرست</div>`;
           return;
         }
 
-        if (!users || users.length === 0) {
+        const users = data.students || [];
+
+        if (users.length === 0) {
           studentsList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>دانش‌آموز دیگری در سامانه ثبت نشده است.</div>";
           return;
         }
@@ -800,7 +778,7 @@
         });
 
       } catch (err) {
-        studentsList.innerHTML = `<div class="msg err">خطا در ارتباط با سرور: ${err.message}</div>`;
+        studentsList.innerHTML = `<div class="msg err">خطا در ارتباط با سرور</div>`;
       }
     });
 
@@ -826,7 +804,8 @@
     document.getElementById("backFromActionBtn").addEventListener("click", () => {
       openStudentsBtn.click();
     });
-    // انتقال وجه واقعی با تابع امن transfer_yaro
+
+    // ============ انتقال یارو ============
     openTransferBtn.addEventListener("click", () => {
       hideAllCards();
       transferCard.classList.remove("hidden");
@@ -864,7 +843,7 @@
 
       try {
         const { data, error } = await client.rpc("transfer_yaro", {
-          p_sender_id: currentUser.id,
+          p_token: currentToken,
           p_receiver_id: selectedStudent.id,
           p_amount: amount,
           p_reason: reason
@@ -890,7 +869,6 @@
           return;
         }
 
-        // کسر موجودی و بروزرسانی حافظه لوکال
         currentUser.balance = (currentUser.balance || 0) - amount;
         balanceText.textContent = currentUser.balance;
         localStorage.setItem("yaro_session", JSON.stringify(currentUser));
@@ -899,7 +877,6 @@
         transferMsg.className = "msg ok";
         confirmTransferBtn.disabled = false;
 
-        // به‌روزرسانی تعداد اعلان‌ها و برگشت
         fetchUnreadCounts();
         setTimeout(() => openStudentAction(selectedStudent), 1400);
 
@@ -910,12 +887,11 @@
       }
     });
 
-
     document.getElementById("backFromTransferBtn").addEventListener("click", () => {
       openStudentAction(selectedStudent);
     });
 
-       // ثبت شکایت رسمی با عنوان و شرح پرونده
+    // ============ ثبت شکایت ============
     openComplaintBtn.addEventListener("click", () => {
       hideAllCards();
       complaintCard.classList.remove("hidden");
@@ -946,30 +922,20 @@
       complaintMsg.className = "msg ok";
 
       try {
-        // ۱. تشکیل پرونده در court_cases برای قاضی
-        const { error: caseError } = await client.from("court_cases").insert({
-          complainant_id: currentUser.id,
-          defendant_id: selectedStudent.id,
-          title: title,
-          description: text,
-          status: "pending_judge"
+        const { data, error } = await client.rpc("submit_complaint", {
+          p_token: currentToken,
+          p_defendant_id: selectedStudent.id,
+          p_title: title,
+          p_description: text
         });
 
-        if (caseError) throw caseError;
-
-        // ۲. ارسال پیام دولتی به متهم: فلانی از شما به دلیل (...) شکایت کرد
-        await client.from("system_notifications").insert({
-          user_id: selectedStudent.id,
-          title: "ابلاغیه قضایی شکایت",
-          body: `${currentUser.name} ${currentUser.family} از شما به دلیل «${title}» شکایت کرد.`
-        });
-
-        // ۳. ارسال پیام دولتی به شاکی: شکایت شما با موفقیت ثبت شد
-        await client.from("system_notifications").insert({
-          user_id: currentUser.id,
-          title: "رسید ثبت شکایت",
-          body: `شکایت شما با عنوان «${title}» با موفقیت ثبت شد و پرونده به پنل قاضی ارجاع گردید.`
-        });
+        if (error || !data || !data.ok) {
+          const errText = (data && data.error) ? data.error : (error ? error.message : "خطای ناشناخته");
+          complaintMsg.textContent = "خطا در ثبت شکایت: " + errText;
+          complaintMsg.className = "msg err";
+          confirmComplaintBtn.disabled = false;
+          return;
+        }
 
         complaintMsg.textContent = "پرونده تشکیل و با موفقیت به قاضی ارسال شد.";
         complaintMsg.className = "msg ok";
@@ -987,8 +953,7 @@
       openStudentAction(selectedStudent);
     });
 
-
-    // چت و پیام
+    // ============ چت ============
     openChatBtn.addEventListener("click", async () => {
       hideAllCards();
       chatCard.classList.remove("hidden");
@@ -1000,24 +965,19 @@
       chatMessages.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری پیام‌ها...</div>";
 
       try {
-        await client
-          .from("messages")
-          .update({ is_read: true })
-          .eq("sender_id", selectedStudent.id)
-          .eq("receiver_id", currentUser.id);
+        const { data, error } = await client.rpc("get_messages", {
+          p_token: currentToken,
+          p_with_user_id: selectedStudent.id
+        });
 
-        const { data: msgs, error } = await client
-          .from("messages")
-          .select("*")
-          .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedStudent.id}),and(sender_id.eq.${selectedStudent.id},receiver_id.eq.${currentUser.id})`)
-          .order("created_at", { ascending: true });
-
-        if (error) {
-          chatMessages.innerHTML = `<div class="msg err">خطا در بارگذاری پیام‌ها: ${error.message}</div>`;
+        if (error || !data || !data.ok) {
+          chatMessages.innerHTML = `<div class="msg err">خطا در بارگذاری پیام‌ها</div>`;
           return;
         }
 
-        if (!msgs || msgs.length === 0) {
+        const msgs = data.messages || [];
+
+        if (msgs.length === 0) {
           chatMessages.innerHTML = "<div style='color: var(--muted); text-align:center; padding:20px;'>هنوز گفت‌وگویی صورت نگرفته است. اولین پیام را بفرستید!</div>";
           return;
         }
@@ -1041,16 +1001,16 @@
 
       sendChatBtn.disabled = true;
 
-      const { error } = await client.from("messages").insert({
-        sender_id: currentUser.id,
-        receiver_id: selectedStudent.id,
-        body: text
+      const { data, error } = await client.rpc("send_message", {
+        p_token: currentToken,
+        p_receiver_id: selectedStudent.id,
+        p_body: text
       });
 
       sendChatBtn.disabled = false;
 
-      if (error) {
-        alert("خطا در ارسال پیام: " + error.message);
+      if (error || !data || !data.ok) {
+        alert("خطا در ارسال پیام");
       } else {
         chatInput.value = "";
         loadMessages();
@@ -1063,31 +1023,26 @@
       });
     });
 
-    // اعلان‌ها
+    // ============ اعلان‌های دولتی ============
     openGovBtn.addEventListener("click", async () => {
       hideAllCards();
       govCard.classList.remove("hidden");
       govMessagesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری اعلان‌ها...</div>";
 
       try {
-        await client
-          .from("system_notifications")
-          .update({ is_read: true })
-          .eq("user_id", currentUser.id);
+        const { data, error } = await client.rpc("get_my_notifications", {
+          p_token: currentToken
+        });
 
-        const { data: notes, error } = await client
-          .from("system_notifications")
-          .select("*")
-          .eq("user_id", currentUser.id)
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          govMessagesList.innerHTML = `<div class="msg err">خطا: ${error.message}</div>`;
+        if (error || !data || !data.ok) {
+          govMessagesList.innerHTML = `<div class="msg err">خطا در بارگذاری اعلان‌ها</div>`;
           return;
         }
 
+        const notes = data.notifications || [];
+
         govMessagesList.innerHTML = "";
-        if (!notes || notes.length === 0) {
+        if (notes.length === 0) {
           govMessagesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:20px;'>هیچ پیام یا اخطاری برای شما ثبت نشده است.</div>";
           return;
         }
@@ -1109,7 +1064,7 @@
       showDashboard(currentUser);
     });
 
-    // تابع ورود اصلی
+    // ============ تابع ورود ============
     async function login() {
       hideMsg();
 
@@ -1135,7 +1090,7 @@
           return;
         }
 
-        if (!data || data.length === 0) {
+        if (!data || !data.ok) {
           let attempts = getFailedAttempts() + 1;
           setFailedAttempts(attempts);
 
@@ -1159,13 +1114,15 @@
           return;
         }
 
-        // ورود موفق -> پاک‌کردن جریمه‌ها
         localStorage.removeItem("yaro_failed_attempts");
         localStorage.removeItem("yaro_lockout_stage");
         localStorage.removeItem("yaro_lockout_until");
 
-        const user = data[0];
+        const user = data.user;
+        currentToken = data.token;
         localStorage.setItem("yaro_session", JSON.stringify(user));
+        localStorage.setItem("yaro_token", data.token);
+        setLoading(false);
         showDashboard(user);
 
       } catch (err) {
@@ -1186,25 +1143,31 @@
       if (e.key === "Enter") login();
     });
 
-        logoutBtn.addEventListener("click", () => {
+    logoutBtn.addEventListener("click", async () => {
       if (realtimeChannel) {
         client.removeChannel(realtimeChannel);
         realtimeChannel = null;
       }
+      if (currentToken) {
+        try {
+          await client.rpc("logout", { p_token: currentToken });
+        } catch (e) {}
+      }
       localStorage.removeItem("yaro_session");
+      localStorage.removeItem("yaro_token");
       showLogin();
     });
 
-
-    // چک کردن نشان‌گر قرمز تراکنش‌های جدید دفتر کل
+    // ============ دفتر کل (ادمین) ============
     async function fetchLedgerBadge() {
-      if (!currentUser || currentUser.role !== "admin") return;
+      if (!currentUser || currentUser.role !== "admin" || !currentToken) return;
       try {
-        const { data: count, error } = await client.rpc("admin_get_unread_ledger_count", {
-          p_admin_id: currentUser.id
+        const { data, error } = await client.rpc("admin_get_unread_ledger_count", {
+          p_token: currentToken
         });
-        if (error) return;
+        if (error || !data || !data.ok) return;
 
+        const count = data.count;
         if (count && count > 0) {
           ledgerBadge.textContent = count > 99 ? "+99" : count;
           ledgerBadge.classList.remove("hidden");
@@ -1216,13 +1179,12 @@
       }
     }
 
-    // باز کردن دفتر کل
     openLedgerBtn.addEventListener("click", async () => {
       hideAllCards();
       ledgerCard.classList.remove("hidden");
       ledgerBadge.classList.add("hidden");
 
-      await client.rpc("admin_mark_ledger_as_seen", { p_admin_id: currentUser.id });
+      await client.rpc("admin_mark_ledger_as_seen", { p_token: currentToken });
       loadLedgerTransactions();
     });
 
@@ -1230,22 +1192,24 @@
       ledgerList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال دریافت دفتر کل...</div>";
       try {
         const { data, error } = await client.rpc("admin_get_all_transfers", {
-          p_admin_id: currentUser.id
+          p_token: currentToken
         });
 
-        if (error) {
-          ledgerList.innerHTML = `<div class="msg err">خطا در بارگذاری: ${error.message}</div>`;
+        if (error || !data || !data.ok) {
+          ledgerList.innerHTML = `<div class="msg err">خطا در بارگذاری</div>`;
           return;
         }
 
-        if (!data || data.length === 0) {
+        const transfers = data.transfers || [];
+
+        if (transfers.length === 0) {
           ledgerList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:20px;'>هنوز هیچ تراکنشی ثبت نشده است.</div>";
           return;
         }
 
         ledgerList.innerHTML = "";
-        data.forEach(item => {
-                  const date = new Date(item.created_at).toLocaleString("fa-IR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+        transfers.forEach(item => {
+          const date = new Date(item.created_at).toLocaleString("fa-IR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 
           const row = document.createElement("div");
           row.className = "list-item";
@@ -1263,7 +1227,7 @@
           ledgerList.appendChild(row);
         });
       } catch (err) {
-        ledgerList.innerHTML = `<div class="msg err">خطا: ${err.message}</div>`;
+        ledgerList.innerHTML = `<div class="msg err">خطا</div>`;
       }
     }
 
@@ -1271,7 +1235,8 @@
       showDashboard(currentUser);
     });
 
-       function openAdjustModal(user) {
+    // ============ مدیریت موجودی (ادمین) ============
+    function openAdjustModal(user) {
       modalTargetUserId.value = user.id;
       modalUserName.textContent = `${user.name} ${user.family}`;
       modalUserCurrentBalance.textContent = `موجودی فعلی: ${user.balance} یارو`;
@@ -1295,21 +1260,23 @@
       allUsersBalanceList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال دریافت موجودی همه کاربران...</div>";
       try {
         const { data, error } = await client.rpc("admin_list_users_balances", {
-          p_admin_id: currentUser.id
+          p_token: currentToken
         });
 
-        if (error) {
-          allUsersBalanceList.innerHTML = `<div class="msg err">خطا: ${error.message}</div>`;
+        if (error || !data || !data.ok) {
+          allUsersBalanceList.innerHTML = `<div class="msg err">خطا در بارگذاری</div>`;
           return;
         }
 
-        if (!data || data.length === 0) {
+        const users = data.users || [];
+
+        if (users.length === 0) {
           allUsersBalanceList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>کاربری یافت نشد.</div>";
           return;
         }
 
         allUsersBalanceList.innerHTML = "";
-        data.forEach(u => {
+        users.forEach(u => {
           const row = document.createElement("div");
           row.className = "list-item";
           row.style.cursor = "pointer";
@@ -1353,7 +1320,7 @@
 
       try {
         const { data, error } = await client.rpc("admin_adjust_balance_yaro", {
-          p_admin_id: currentUser.id,
+          p_token: currentToken,
           p_target_user_id: parseInt(targetId, 10),
           p_delta: delta,
           p_reason: reason
@@ -1386,25 +1353,23 @@
       showDashboard(currentUser);
     });
 
-    
-    // --- توابع و رویدادهای کارتابل دادگاه و قضایی ---
+    // ============ کارتابل قضایی ============
     async function fetchCourtBadge() {
-      if (!currentUser) return;
+      if (!currentUser || !currentToken) return;
       let targetStatus = null;
       if (currentUser.role === "judge") targetStatus = "pending_judge";
       else if (currentUser.role === "chief_judge") targetStatus = "pending_chief";
       else return;
 
       try {
-        const { count, error } = await client
-          .from("court_cases")
-          .select("id", { count: "exact", head: true })
-          .eq("status", targetStatus);
+        const { data, error } = await client.rpc("get_court_badge_count", {
+          p_token: currentToken
+        });
 
         const badgeEl = document.getElementById("courtBadge");
         if (badgeEl) {
-          if (!error && count && count > 0) {
-            badgeEl.textContent = count > 99 ? "+99" : count;
+          if (!error && data && data.ok && data.count > 0) {
+            badgeEl.textContent = data.count > 99 ? "+99" : data.count;
             badgeEl.classList.remove("hidden");
           } else {
             badgeEl.classList.add("hidden");
@@ -1415,12 +1380,11 @@
       }
     }
 
-  
     if (openCourtBtn) {
       openCourtBtn.addEventListener("click", () => {
         hideAllCards();
-        const courtCard = document.getElementById("courtCard");
-        if (courtCard) courtCard.classList.remove("hidden");
+        const courtCardEl = document.getElementById("courtCard");
+        if (courtCardEl) courtCardEl.classList.remove("hidden");
         loadCourtCases();
       });
     }
@@ -1432,34 +1396,29 @@
     }
 
     async function loadCourtCases() {
-      const courtCasesList = document.getElementById("courtCasesList");
-      if (!courtCasesList) return;
+      const courtCasesListEl = document.getElementById("courtCasesList");
+      if (!courtCasesListEl) return;
 
-      courtCasesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری پرونده‌ها...</div>";
-      const filterStatus = currentUser.role === "judge" ? "pending_judge" : "pending_chief";
+      courtCasesListEl.innerHTML = "<div style='color:var(--muted); text-align:center; padding:15px;'>در حال بارگذاری پرونده‌ها...</div>";
 
       try {
-        const { data: cases, error } = await client
-          .from("court_cases")
-          .select(`
-            *,
-            complainant:complainant_id(name, family),
-            defendant:defendant_id(name, family)
-          `)
-          .eq("status", filterStatus)
-          .order("id", { ascending: false });
+        const { data, error } = await client.rpc("get_court_cases", {
+          p_token: currentToken
+        });
 
-        if (error) {
-          courtCasesList.innerHTML = `<div class="msg err">خطا در دریافت پرونده‌ها: ${error.message}</div>`;
+        if (error || !data || !data.ok) {
+          courtCasesListEl.innerHTML = `<div class="msg err">خطا در دریافت پرونده‌ها</div>`;
           return;
         }
 
-        if (!cases || cases.length === 0) {
-          courtCasesList.innerHTML = "<div style='color:var(--muted); text-align:center; padding:20px;'>در حال حاضر هیچ پرونده‌ای در این کارتابل وجود ندارد.</div>";
+        const cases = data.cases || [];
+
+        if (cases.length === 0) {
+          courtCasesListEl.innerHTML = "<div style='color:var(--muted); text-align:center; padding:20px;'>در حال حاضر هیچ پرونده‌ای در این کارتابل وجود ندارد.</div>";
           return;
         }
 
-        courtCasesList.innerHTML = "";
+        courtCasesListEl.innerHTML = "";
         cases.forEach(c => {
           const item = document.createElement("div");
           item.className = "list-item";
@@ -1503,11 +1462,11 @@
             </div>
             ${actionHtml}
           `;
-          courtCasesList.appendChild(item);
+          courtCasesListEl.appendChild(item);
         });
 
       } catch (err) {
-        courtCasesList.innerHTML = `<div class="msg err">خطای ارتباطی: ${err.message}</div>`;
+        courtCasesListEl.innerHTML = `<div class="msg err">خطای ارتباطی</div>`;
       }
     }
 
@@ -1523,8 +1482,8 @@
 
       try {
         const { data, error } = await client.rpc("judge_issue_verdict", {
+          p_token: currentToken,
           p_case_id: caseId,
-          p_judge_id: currentUser.id,
           p_fine_amount: fine,
           p_note: "حکم قاضی صادر شد"
         });
@@ -1550,8 +1509,8 @@
 
       try {
         const { data, error } = await client.rpc("chief_justice_decide", {
+          p_token: currentToken,
           p_case_id: caseId,
-          p_chief_id: currentUser.id,
           p_decision: decision
         });
 
@@ -1568,11 +1527,13 @@
       }
     }
 
-
+    // ============ بررسی سشن ============
     (function checkSession() {
       try {
         const saved = localStorage.getItem("yaro_session");
-        if (saved) {
+        const savedToken = localStorage.getItem("yaro_token");
+        if (saved && savedToken) {
+          currentToken = savedToken;
           showDashboard(JSON.parse(saved));
           return;
         }
