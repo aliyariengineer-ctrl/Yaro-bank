@@ -1072,10 +1072,10 @@
         return;
       }
 
-      const code = (codeInput.value || "").trim();
+           const code = (codeInput.value || "").trim();
 
-      if (code.length !== 5 || isNaN(code)) {
-        showMsg("کد ورود باید دقیقاً یک عدد ۵ رقمی باشد.", "err");
+      if (code.length !== 8 || isNaN(code)) {
+        showMsg("کد ورود باید دقیقاً یک عدد ۸ رقمی باشد.", "err");
         return;
       }
 
